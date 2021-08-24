@@ -13,6 +13,8 @@ class Wallet(models.Model):
             cash = Account(wallet=self, title='Cash', category='Cash')
             super(Wallet, self).save(*args, **kwargs)
             cash.save()
+        else:
+            super(Wallet, self).save(*args,**kwargs)
 
     @admin.display(
         description='Balance'
