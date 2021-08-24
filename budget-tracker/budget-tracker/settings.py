@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     #installed apps
     'rest_framework',
+    'rest_framework.authtoken',
     #my apps
     'wallet.apps.WalletConfig',
     'accounts.apps.AccountsConfig',
@@ -103,6 +104,15 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+
+# REST FRAMEWORK
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+            'rest_framework.authentication.BasicAuthentication',  # enables simple command line authentication
+            'rest_framework.authentication.SessionAuthentication',
+            'rest_framework.authentication.TokenAuthentication',
+    ],
+}
 
 
 # Internationalization
