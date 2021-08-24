@@ -4,7 +4,7 @@
 *.pyc
 __pycache__
 db.sqlite3
-media
+
 
 .DS_Store
 
@@ -109,6 +109,3 @@ Control.ca-list
 Control.ca-bundle
 Control.system-ca-bundle
 GitHub.sublime-settings
-
-#Media Folder
-.media
