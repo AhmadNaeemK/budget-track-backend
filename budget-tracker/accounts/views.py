@@ -1,29 +1,22 @@
 from rest_framework.response import Response
-from rest_framework import generics, status
+from rest_framework import status
 from rest_framework.views import APIView
-from rest_framework import authentication, permissions
+from rest_framework import permissions
 
-from django.contrib.auth.models import User
+from .models import MyUser as User
 
-from .serializers import UserSerializer, RegistrationSerializer, LoginSerializer
+from .serializers import UserSerializer, RegistrationSerializer, MyTokenObtainPairSerializer
 
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenObtainPairView
 
 
-def get_tokens_for_user(user):
-    refresh = RefreshToken.for_user(user)
-
-    return {
-        'refresh': str(refresh),
-        'access': str(refresh.access_token),
-    }
-
-# Create your views here.
+class MyTokenObtainPairView(TokenObtainPairView):
+    serializer_class = MyTokenObtainPairSerializer
 
 
 class UserList(APIView):
-
     permission_classes = [permissions.IsAdminUser]
+
     def get(self, request):
         print(request.user)
         users = User.objects.all()
@@ -45,24 +38,8 @@ class RegisterUser(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class LoginUser(APIView):
-    permission_classes = [permissions.AllowAny]
-    def post(self, request):
-        serializer = LoginSerializer(data=request.data)
-        if serializer.is_valid():
-            user = serializer.validated_data
-            tokens = get_tokens_for_user(user)
-            return Response({
-                'user': UserSerializer(user).data,
-                'access': tokens['access'],
-                'refresh': tokens['refresh'],
-            })
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
 class LogoutUser(APIView):
 
     def get(self, request):
         print(request.user.auth_token)
         return Response('User Logged Out')
-

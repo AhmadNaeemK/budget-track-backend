@@ -10,13 +10,13 @@ from .serializers import TransactionSerializer
 
 class TransactionList(APIView):
 
-    def get(self, request, format=None):
+    def get(self, *args, **kwargs):
         transactions = Transaction.objects.all()
         serializer = TransactionSerializer(transactions, many=True)
         print(serializer)
         return Response(serializer.data)
 
-    def post(self, request, format=None):
+    def post(self, request):
         serializer = TransactionSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
