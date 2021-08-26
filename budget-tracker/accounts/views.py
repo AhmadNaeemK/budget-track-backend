@@ -7,12 +7,23 @@ from django.contrib.auth.models import User
 
 from .serializers import UserSerializer, RegistrationSerializer, LoginSerializer
 
+from rest_framework_simplejwt.tokens import RefreshToken
+
+
+def get_tokens_for_user(user):
+    refresh = RefreshToken.for_user(user)
+
+    return {
+        'refresh': str(refresh),
+        'access': str(refresh.access_token),
+    }
+
 # Create your views here.
 
 
 class UserList(APIView):
 
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAdminUser]
     def get(self, request):
         print(request.user)
         users = User.objects.all()
@@ -40,9 +51,11 @@ class LoginUser(APIView):
         serializer = LoginSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.validated_data
-            print(request.user)
+            tokens = get_tokens_for_user(user)
             return Response({
                 'user': UserSerializer(user).data,
+                'access': tokens['access'],
+                'refresh': tokens['refresh'],
             })
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
