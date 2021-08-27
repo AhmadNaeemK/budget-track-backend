@@ -3,5 +3,5 @@ from . import views
 
 app_name = 'wallet'
 urlpatterns = [
-    path('transactions/', views.TransactionList, name='transaction_list'),
+    path('transactionlist/', views.TransactionList.as_view(), name='transaction_list'),
 ]

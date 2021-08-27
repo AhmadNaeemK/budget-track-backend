@@ -101,6 +101,7 @@ class Transaction(models.Model):
     description = models.TextField()
     debit_account = models.ForeignKey(Account, on_delete=models.CASCADE, related_name='debit_account')
     credit_account = models.ForeignKey(Account, on_delete=models.CASCADE, related_name='credit_account')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='user')
     transaction_date = models.DateTimeField(auto_now=True)
     amount = models.FloatField()
 

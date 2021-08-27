@@ -18,7 +18,6 @@ class UserList(APIView):
     permission_classes = [permissions.IsAdminUser]
 
     def get(self, request):
-        print(request.user)
         users = User.objects.all()
         serializer = UserSerializer(users, many=True)
         return Response(serializer.data)
