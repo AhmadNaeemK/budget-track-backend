@@ -40,5 +40,5 @@ class RegisterUser(APIView):
 class LogoutUser(APIView):
 
     def get(self, request):
-        print(request.user.auth_token)
+        print(request.user)
         return Response('User Logged Out')

@@ -6,7 +6,7 @@ from .models import Transaction, Account
 class TransactionSerializer (serializers.ModelSerializer):
     class Meta:
         model = Transaction
-        fields = ['id', 'description', 'credit_account', 'debit_account', 'transaction_date', 'amount', ]
+        fields = ['id', 'title','description', 'user', 'credit_account', 'debit_account', 'transaction_date', 'amount', ]
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -18,5 +18,5 @@ class TransactionSerializer (serializers.ModelSerializer):
 class AccountSerializer (serializers.ModelSerializer):
     class Meta:
         model = Account
-        fields = ['title', 'category']
+        fields = ['id', 'title', 'category', 'debit_amount', 'credit_amount']
 
