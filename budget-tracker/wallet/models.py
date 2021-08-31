@@ -1,10 +1,10 @@
 from django.db import models
-from django.contrib.auth.models import User
 from django.contrib import admin
+from django.conf import settings
 
 
 class Wallet(models.Model):
-    user = models.OneToOneField(to=User, on_delete=models.CASCADE)
+    user = models.OneToOneField(to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     start_tracking_date = models.DateField()
 
     def save(self, *args, **kwargs):
