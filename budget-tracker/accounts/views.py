@@ -18,7 +18,6 @@ class UserList(APIView):
     permission_classes = [permissions.IsAdminUser]
 
     def get(self, request):
-        print(request.user)
         users = User.objects.all()
         serializer = UserSerializer(users, many=True)
         return Response(serializer.data)
@@ -41,5 +40,5 @@ class RegisterUser(APIView):
 class LogoutUser(APIView):
 
     def get(self, request):
-        print(request.user.auth_token)
+        print(request.user)
         return Response('User Logged Out')
