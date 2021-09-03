@@ -72,11 +72,6 @@ class Account(models.Model):
         self.credit_amount = self.get_credit()
         return self.get_debit() - self.get_credit()
 
-    def update_account(self):
-        self.credit_amount = self.get_credit()
-        self.debit_amount = self.get_debit()
-        self.save()
-
     @admin.display(description='User')
     def get_user(self):
         return self.wallet.user

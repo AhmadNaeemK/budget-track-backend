@@ -12,9 +12,9 @@ class TransactionList(APIView):
 
     def get(self, request, format=None):
         if request.GET.get('all'):
-            transactions = Transaction.objects.filter(user_id=request.user.id).order_by('-transaction_date')[:5]
-        else:
             transactions = Transaction.objects.filter(user_id=request.user.id).order_by('-transaction_date')
+        else:
+            transactions = Transaction.objects.filter(user_id=request.user.id).order_by('-transaction_date')[:5]
         serializer = TransactionSerializer(transactions, many=True)
         return Response(serializer.data)
 
@@ -26,15 +26,20 @@ class TransactionList(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def put(self, request):
+    def patch(self, request):
+        print(request.data)
         transactionId = request.data.pop('transactionId')
-        request.data['amount'] = int(request.data['amount'])
+        if 'amount' in request.data.keys():
+            request.data['amount'] = int(request.data['amount'])
         transaction = Transaction.objects.get(pk=transactionId)
         serializer = TransactionSerializer(transaction, request.data, partial=True)
         if serializer.is_valid():
+            print('valid')
             serializer.save()
             return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        print(serializer.errors)
+        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+
 
     def delete(self, request):
         try:
