@@ -53,9 +53,6 @@ class Account(models.Model):
         ]
     category = models.TextField(choices=account_category_choices)
 
-    debit_amount = models.FloatField(default=0)
-    credit_amount = models.FloatField(default=0)
-
     def get_debit(self):
         d_amount = 0
         transactions = Transaction.objects.filter(debit_account=self)
@@ -90,7 +87,9 @@ class Account(models.Model):
 
     @admin.display(description='Balance')
     def get_balance(self):
-        return self.debit_amount - self.credit_amount
+        self.debit_amount = self.get_debit()
+        self.credit_amount = self.get_credit()
+        return self.get_debit() - self.get_credit()
 
     class Meta:
         unique_together = [['wallet', 'title']]
@@ -104,11 +103,6 @@ class Transaction(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='user')
     transaction_date = models.DateTimeField(auto_now=True)
     amount = models.FloatField()
-
-    def save(self, *args, **kwargs):
-        super(Transaction, self).save(*args, **kwargs)
-        self.debit_account.update_account()
-        self.credit_account.update_account()
 
     @admin.display(description='Credit Account')
     def get_credit_account(self):

@@ -18,5 +18,10 @@ class TransactionSerializer (serializers.ModelSerializer):
 class AccountSerializer (serializers.ModelSerializer):
     class Meta:
         model = Account
-        fields = ['id', 'title', 'category', 'debit_amount', 'credit_amount']
+        fields = ['id', 'title', 'category', 'wallet']
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['debit'] = Account.objects.get(pk=data['id']).get_debit()
+        data['credit'] = Account.objects.get(pk=data['id']).get_credit()
+        return data
