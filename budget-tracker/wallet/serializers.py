@@ -6,7 +6,7 @@ from .models import Transaction, Account
 class TransactionSerializer (serializers.ModelSerializer):
     class Meta:
         model = Transaction
-        fields = ['id', 'title', 'description', 'user', 'credit_account', 'debit_account', 'transaction_date', 'amount',]
+        fields = ['id', 'title', 'description', 'user', 'credit_account', 'debit_account', 'transaction_date', 'amount']
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -16,39 +16,34 @@ class TransactionSerializer (serializers.ModelSerializer):
 
     def validate(self, data):
 
-        if 'credit_account' in data.keys():
-            if data.get('credit_account').category not in ['Cash', 'Salary']:
-                raise serializers.ValidationError("Credit Account can only be a Cash or Salary type account")
+        def my_get(attr_name):
+            if attr_name in data:
+                return data[attr_name]
+            if self.instance and hasattr(self.instance, attr_name):
+                return getattr(self.instance, attr_name)
+            return None
 
-            if 'debit_account' in data.keys():
-                if data.get('credit_account') == data.get('debit_account'):
-                    raise serializers.ValidationError("Credit Account can not be same as debit account")
-            else:
-                if data.get('credit_account') == self.instance.debit_account:
-                    raise serializers.ValidationError("Credit Account can not be same as debit account")
+        credit_account = my_get('credit_account')
+        debit_account = my_get('debit_account')
+        amount = my_get('amount')
 
-            if 'amount' in data.keys():
-                if (data.get('amount') > data.get('credit_account').get_balance()
-                        and data.get('credit_account').category != 'Salary'):
-                    raise serializers.ValidationError("Credit Account does not have enough Balance")
-            else:
-                if self.instance.amount > data.get('credit_account').get_balance():
-                    raise serializers.ValidationError("Credit Account does not have enough Balance")
+        if credit_account.category not in ['Cash', 'Salary']:
+            raise serializers.ValidationError("Credit Account can only be a Cash or Salary type account")
 
-        if 'debit_account' in data.keys():
-            if data.get('debit_account').category == 'Salary':
-                raise serializers.ValidationError("Debit Account can not be a Salary type account")
+        if credit_account == debit_account:
+            raise serializers.ValidationError("Credit Account can not be same as debit account")
 
-            if self.instance and self.instance.credit_account == data.get('debit_account'):
-                raise serializers.ValidationError("Credit Account can not be same as debit account")
+        if amount > credit_account.get_balance() and credit_account.category != 'Salary':
+            raise serializers.ValidationError("Credit Account does not have enough Balance")
 
-        if 'amount' in data.keys():
-            if self.instance and self.instance.credit_account.get_balance() + self.instance.amount < data.get('amount'):
+        if debit_account.category == 'Salary':
+            raise serializers.ValidationError("Debit Account can not be a Salary type account")
+
+        if self.partial:
+            if self.instance and self.instance.credit_account.get_balance() + self.instance.amount < amount:
                 raise serializers.ValidationError("Credit Account does not have enough Balance")
 
         return data
-
-
 
 
 class AccountSerializer (serializers.ModelSerializer):

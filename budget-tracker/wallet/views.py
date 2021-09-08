@@ -5,14 +5,15 @@ from rest_framework import status
 from .models import Transaction, Wallet, Account
 from .serializers import TransactionSerializer, AccountSerializer
 
-from django.contrib.auth import get_user_model
+from django.db.models import Q
 
 
 class TransactionList(APIView):
 
     def get(self, request, format=None):
         if request.GET.get('all'):
-            transactions = Transaction.objects.filter(user_id=request.user.id).order_by('-transaction_date')
+            transactions = Transaction.objects.filter(user_id=request.user.id, transaction_date__month=request.GET.get('month')).order_by('-transaction_date')
+            print(transactions)
         else:
             transactions = Transaction.objects.filter(user_id=request.user.id).order_by('-transaction_date')[:5]
         serializer = TransactionSerializer(transactions, many=True)
@@ -97,10 +98,23 @@ class AccountList(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-
 class AccountCategoryChoicesList(APIView):
 
     def get(self, request):
         choices = Account.account_category_choices
 
         return Response(dict(choices))
+
+
+class ExpenseAccountsMonthlyData(APIView):
+
+    def get(self, request):
+        accounts_data = []
+        wallet = Wallet.objects.filter(user_id=request.user.id)[0]
+        accounts = (Account.objects.filter(wallet=wallet)
+                    .exclude(Q(category='Cash') | Q(category='Salary')))
+        for account in accounts:
+            accounts_data.append(account.get_monthly_debit_credit_history(credit=False, month=request.GET.get('month')))
+
+        return Response(accounts_data)
+

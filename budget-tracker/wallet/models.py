@@ -2,6 +2,8 @@ from django.db import models
 from django.contrib import admin
 from django.conf import settings
 
+import datetime
+
 
 class Wallet(models.Model):
     user = models.OneToOneField(to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -71,6 +73,33 @@ class Account(models.Model):
         self.debit_amount = self.get_debit()
         self.credit_amount = self.get_credit()
         return self.get_debit() - self.get_credit()
+
+    def get_history(self, transactions):
+        amount = 0
+        amount_list = list()
+        for transaction in transactions:
+            amount += transaction.amount
+            amount_list.append(transaction.amount)
+        return amount, amount_list
+
+    def get_monthly_debit_credit_history(self, credit, month):
+        if credit:
+            transactions = Transaction.objects.filter(credit_account=self, transaction_date__month=month, transaction_date__year=datetime.date.today().year)
+            credit_amount, credit_list = self.get_history(transactions)
+            return {
+                'account': self,
+                'credit': credit_amount,
+                'credit_list': credit_list,
+            }
+        else:
+            transactions = Transaction.objects.filter(debit_account=self, transaction_date__month=month, transaction_date__year=datetime.date.today().year)
+            debit_amount, debit_list = self.get_history(transactions)
+            return {
+                'id': self.id,
+                'title': self.title,
+                'debit': debit_amount,
+                'debit_list': debit_list,
+            }
 
     @admin.display(description='User')
     def get_user(self):
