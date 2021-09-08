@@ -71,13 +71,9 @@ class AccountList(APIView):
         wallet = Wallet.objects.filter(user_id=request.user.id)[0]
         request.data.update({'wallet': wallet.id})
         serializer = AccountSerializer(data=request.data)
-        print(serializer)
         if serializer.is_valid():
-            print(serializer)
-            print(serializer.validated_data)
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        print(serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request):

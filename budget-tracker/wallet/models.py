@@ -42,6 +42,7 @@ class Wallet(models.Model):
 class Account(models.Model):
     wallet = models.ForeignKey(Wallet, on_delete=models.CASCADE)
     title = models.CharField(max_length=200)
+    budget_limit = models.FloatField(default=0)
 
     account_category_choices = [
         ('HealthCare', 'Doctor/Medicine'),

@@ -49,7 +49,7 @@ class TransactionSerializer (serializers.ModelSerializer):
 class AccountSerializer (serializers.ModelSerializer):
     class Meta:
         model = Account
-        fields = ['id', 'title', 'category', 'wallet']
+        fields = ['id', 'title', 'category', 'wallet', 'budget_limit']
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
