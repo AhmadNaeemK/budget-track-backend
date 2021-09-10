@@ -21,7 +21,7 @@ class WalletAdmin(admin.ModelAdmin):
 
 class AccountsAdmin(admin.ModelAdmin):
     inlines = [TransactionAdminInline]
-    list_display = ('title', 'get_wallet_id', 'get_user', 'category')
+    list_display = ('title', 'get_wallet_id', 'get_user', 'category', 'budget_limit')
 
 
 class TransactionAdmin(admin.ModelAdmin):

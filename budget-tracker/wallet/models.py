@@ -2,6 +2,8 @@ from django.db import models
 from django.contrib import admin
 from django.conf import settings
 
+import datetime
+
 
 class Wallet(models.Model):
     user = models.OneToOneField(to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -10,7 +12,7 @@ class Wallet(models.Model):
     def save(self, *args, **kwargs):
         # on creation of wallet
         if not self.pk:
-            cash = Account(wallet=self, title='Cash', category='Cash')
+            cash = Account(wallet=self, title='Cash', category=Account.Categories.Cash.value)
             super(Wallet, self).save(*args, **kwargs)
             cash.save()
         else:
@@ -40,18 +42,17 @@ class Wallet(models.Model):
 class Account(models.Model):
     wallet = models.ForeignKey(Wallet, on_delete=models.CASCADE)
     title = models.CharField(max_length=200)
+    budget_limit = models.FloatField(default=0)
 
-    account_category_choices = [
-        ('HealthCare', 'Doctor/Medicine'),
-        ('Loans/Interests', 'Loans/Interests'),
-        ('Travel', 'Petrol/Transport'),
-        ('Cash', 'Cash/Bank/'),
-        ('Lifestyle', 'Grocery/Sports'),
-        ('Food', 'Restaurant/Fast Food'),
-        ('Salary', 'Salary/Profit/Income'),
-        ('Other', 'Other')
-        ]
-    category = models.TextField(choices=account_category_choices)
+    class Categories (models.IntegerChoices):
+        Cash = 1
+        Salary = 2
+        HealthCare = 3
+        Travel = 5
+        Food = 6
+        Other = 7
+
+    category = models.IntegerField(choices=Categories.choices)
 
     def get_debit(self):
         d_amount = 0
@@ -72,10 +73,32 @@ class Account(models.Model):
         self.credit_amount = self.get_credit()
         return self.get_debit() - self.get_credit()
 
-    def update_account(self):
-        self.credit_amount = self.get_credit()
-        self.debit_amount = self.get_debit()
-        self.save()
+    def get_history(self, transactions):
+        amount = 0
+        amount_list = list()
+        for transaction in transactions:
+            amount += transaction.amount
+            amount_list.append(transaction.amount)
+        return amount, amount_list
+
+    def get_monthly_debit_credit_history(self, credit, month):
+        if credit:
+            transactions = Transaction.objects.filter(credit_account=self, transaction_date__month=month, transaction_date__year=datetime.date.today().year)
+            credit_amount, credit_list = self.get_history(transactions)
+            return {
+                'account': self,
+                'credit': credit_amount,
+                'credit_list': credit_list,
+            }
+        else:
+            transactions = Transaction.objects.filter(debit_account=self, transaction_date__month=month, transaction_date__year=datetime.date.today().year)
+            debit_amount, debit_list = self.get_history(transactions)
+            return {
+                'id': self.id,
+                'title': self.title,
+                'debit': debit_amount,
+                'debit_list': debit_list,
+            }
 
     @admin.display(description='User')
     def get_user(self):

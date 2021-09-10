@@ -5,16 +5,16 @@ from rest_framework import status
 from .models import Transaction, Wallet, Account
 from .serializers import TransactionSerializer, AccountSerializer
 
-from django.contrib.auth import get_user_model
+from django.db.models import Q
 
 
 class TransactionList(APIView):
 
     def get(self, request, format=None):
         if request.GET.get('all'):
-            transactions = Transaction.objects.filter(user_id=request.user.id).order_by('-transaction_date')[:5]
+            transactions = Transaction.objects.filter(user_id=request.user.id, transaction_date__month=request.GET.get('month')).order_by('-transaction_date')
         else:
-            transactions = Transaction.objects.filter(user_id=request.user.id).order_by('-transaction_date')
+            transactions = Transaction.objects.filter(user_id=request.user.id).order_by('-transaction_date')[:5]
         serializer = TransactionSerializer(transactions, many=True)
         return Response(serializer.data)
 
@@ -26,15 +26,18 @@ class TransactionList(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def put(self, request):
+    def patch(self, request):
         transactionId = request.data.pop('transactionId')
-        request.data['amount'] = int(request.data['amount'])
+        if 'amount' in request.data.keys():
+            request.data['amount'] = int(request.data['amount'])
         transaction = Transaction.objects.get(pk=transactionId)
         serializer = TransactionSerializer(transaction, request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        print(serializer.errors)
+        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+
 
     def delete(self, request):
         try:
@@ -65,13 +68,9 @@ class AccountList(APIView):
         wallet = Wallet.objects.filter(user_id=request.user.id)[0]
         request.data.update({'wallet': wallet.id})
         serializer = AccountSerializer(data=request.data)
-        print(serializer)
         if serializer.is_valid():
-            print(serializer)
-            print(serializer.validated_data)
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        print(serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request):
@@ -92,10 +91,20 @@ class AccountList(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-
 class AccountCategoryChoicesList(APIView):
 
     def get(self, request):
-        choices = Account.account_category_choices
+        choices = Account.Categories.choices
 
-        return Response(dict(choices))
+        return Response(choices)
+
+
+class ExpenseAccountsMonthlyData(APIView):
+
+    def get(self, request):
+        wallet = Wallet.objects.get(user_id=request.user.id)
+        accounts = (Account.objects.filter(wallet=wallet)
+                    .exclude(Q(category=Account.Categories.Cash.value) | Q(category=Account.Categories.Salary.value)))
+        accounts_data = [account.get_monthly_debit_credit_history(credit=False, month=request.GET.get('month'))
+                         for account in accounts]
+        return Response(accounts_data)
