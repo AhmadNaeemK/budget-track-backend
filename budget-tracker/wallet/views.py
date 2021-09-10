@@ -13,7 +13,6 @@ class TransactionList(APIView):
     def get(self, request, format=None):
         if request.GET.get('all'):
             transactions = Transaction.objects.filter(user_id=request.user.id, transaction_date__month=request.GET.get('month')).order_by('-transaction_date')
-            print(transactions)
         else:
             transactions = Transaction.objects.filter(user_id=request.user.id).order_by('-transaction_date')[:5]
         serializer = TransactionSerializer(transactions, many=True)
@@ -28,14 +27,12 @@ class TransactionList(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def patch(self, request):
-        print(request.data)
         transactionId = request.data.pop('transactionId')
         if 'amount' in request.data.keys():
             request.data['amount'] = int(request.data['amount'])
         transaction = Transaction.objects.get(pk=transactionId)
         serializer = TransactionSerializer(transaction, request.data, partial=True)
         if serializer.is_valid():
-            print('valid')
             serializer.save()
             return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
         print(serializer.errors)
@@ -97,20 +94,17 @@ class AccountList(APIView):
 class AccountCategoryChoicesList(APIView):
 
     def get(self, request):
-        choices = Account.account_category_choices
+        choices = Account.Categories.choices
 
-        return Response(dict(choices))
+        return Response(choices)
 
 
 class ExpenseAccountsMonthlyData(APIView):
 
     def get(self, request):
-        accounts_data = []
-        wallet = Wallet.objects.filter(user_id=request.user.id)[0]
+        wallet = Wallet.objects.get(user_id=request.user.id)
         accounts = (Account.objects.filter(wallet=wallet)
-                    .exclude(Q(category='Cash') | Q(category='Salary')))
-        for account in accounts:
-            accounts_data.append(account.get_monthly_debit_credit_history(credit=False, month=request.GET.get('month')))
-
+                    .exclude(Q(category=Account.Categories.Cash.value) | Q(category=Account.Categories.Salary.value)))
+        accounts_data = [account.get_monthly_debit_credit_history(credit=False, month=request.GET.get('month'))
+                         for account in accounts]
         return Response(accounts_data)
-

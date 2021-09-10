@@ -12,7 +12,7 @@ class Wallet(models.Model):
     def save(self, *args, **kwargs):
         # on creation of wallet
         if not self.pk:
-            cash = Account(wallet=self, title='Cash', category='Cash')
+            cash = Account(wallet=self, title='Cash', category=Account.Categories.Cash.value)
             super(Wallet, self).save(*args, **kwargs)
             cash.save()
         else:
@@ -44,17 +44,15 @@ class Account(models.Model):
     title = models.CharField(max_length=200)
     budget_limit = models.FloatField(default=0)
 
-    account_category_choices = [
-        ('HealthCare', 'Doctor/Medicine'),
-        ('Loans/Interests', 'Loans/Interests'),
-        ('Travel', 'Petrol/Transport'),
-        ('Cash', 'Cash/Bank/'),
-        ('Lifestyle', 'Grocery/Sports'),
-        ('Food', 'Restaurant/Fast Food'),
-        ('Salary', 'Salary/Profit/Income'),
-        ('Other', 'Other')
-        ]
-    category = models.TextField(choices=account_category_choices)
+    class Categories (models.IntegerChoices):
+        Cash = 1
+        Salary = 2
+        HealthCare = 3
+        Travel = 5
+        Food = 6
+        Other = 7
+
+    category = models.IntegerField(choices=Categories.choices)
 
     def get_debit(self):
         d_amount = 0

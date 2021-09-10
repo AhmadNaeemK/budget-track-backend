@@ -1,7 +1,12 @@
 from rest_framework import serializers
 
-from .models import Transaction, Account
+from .models import Transaction, Account, Wallet
 
+
+class WalletSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Wallet
+        fields = '__all__'
 
 class TransactionSerializer (serializers.ModelSerializer):
     class Meta:
@@ -16,27 +21,27 @@ class TransactionSerializer (serializers.ModelSerializer):
 
     def validate(self, data):
 
-        def my_get(attr_name):
+        def get_from_request_or_instance(attr_name):
             if attr_name in data:
                 return data[attr_name]
             if self.instance and hasattr(self.instance, attr_name):
                 return getattr(self.instance, attr_name)
             return None
 
-        credit_account = my_get('credit_account')
-        debit_account = my_get('debit_account')
-        amount = my_get('amount')
+        credit_account = get_from_request_or_instance('credit_account')
+        debit_account = get_from_request_or_instance('debit_account')
+        amount = get_from_request_or_instance('amount')
 
-        if credit_account.category not in ['Cash', 'Salary']:
+        if credit_account.category not in [Account.Categories.Cash.value, Account.Categories.Salary.value]:
             raise serializers.ValidationError("Credit Account can only be a Cash or Salary type account")
 
         if credit_account == debit_account:
             raise serializers.ValidationError("Credit Account can not be same as debit account")
 
-        if amount > credit_account.get_balance() and credit_account.category != 'Salary':
+        if amount > credit_account.get_balance() and credit_account.category != Account.Categories.Salary.value:
             raise serializers.ValidationError("Credit Account does not have enough Balance")
 
-        if debit_account.category == 'Salary':
+        if debit_account.category == Account.Categories.Salary.value:
             raise serializers.ValidationError("Debit Account can not be a Salary type account")
 
         if self.partial:
@@ -55,5 +60,6 @@ class AccountSerializer (serializers.ModelSerializer):
         data = super().to_representation(instance)
         data['debit'] = Account.objects.get(pk=data['id']).get_debit()
         data['credit'] = Account.objects.get(pk=data['id']).get_credit()
+        data['category'] = Account.Categories.choices[data['category']-1]
         data['balance'] = data['debit'] - data['credit']
         return data
