@@ -2,6 +2,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework import permissions
+from rest_framework import generics
 
 from .models import MyUser as User
 
@@ -18,11 +19,16 @@ class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
 
 
-class UserList(APIView):
-    permission_classes = [permissions.IsAdminUser]
+class UserList(generics.ListAPIView):
 
-    def get(self, request):
+    serializer_class = UserSerializer
+
+    def get_queryset(self):
         users = User.objects.all()
+        return users
+
+    def list(self, request):
+        users = self.get_queryset()
         serializer = UserSerializer(users, many=True)
         return Response(serializer.data)
 
