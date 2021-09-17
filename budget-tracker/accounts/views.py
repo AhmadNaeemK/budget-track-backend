@@ -6,8 +6,6 @@ from rest_framework import generics
 
 from .models import MyUser as User
 
-from wallet.models import Wallet
-
 from .serializers import UserSerializer, RegistrationSerializer, MyTokenObtainPairSerializer
 
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -40,8 +38,6 @@ class RegisterUser(APIView):
         serializer = RegistrationSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            wallet = Wallet(user=user, start_tracking_date=datetime.now())
-            wallet.save()
             return Response({
                 'user': UserSerializer(user).data,
                 'status': status.HTTP_201_CREATED,

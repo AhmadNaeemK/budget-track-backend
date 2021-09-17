@@ -2,6 +2,7 @@ from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from .models import MyUser as User
+from wallet.models import CashAccount
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -19,6 +20,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         user = User.objects.create_user(
             validated_data['username'], validated_data['email'], validated_data['password'])
+        cashAccount = CashAccount.objects.create(title='Cash', user=user)
         return user
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):

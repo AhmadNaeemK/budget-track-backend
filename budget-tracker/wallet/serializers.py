@@ -1,23 +1,12 @@
 from rest_framework import serializers
 
-from .models import Transaction, Account, Wallet
+from .models import Transaction, CashAccount
 
 
-class WalletSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Wallet
-        fields = '__all__'
-
-class TransactionSerializer (serializers.ModelSerializer):
+class TransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Transaction
-        fields = ['id', 'title', 'description', 'user', 'credit_account', 'debit_account', 'transaction_date', 'amount']
-
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        data['credit_account'] = Account.objects.get(pk=data['credit_account']).title
-        data['debit_account'] = Account.objects.get(pk=data['debit_account']).title
-        return data
+        fields = '__all__'
 
     def validate(self, data):
 
@@ -28,38 +17,34 @@ class TransactionSerializer (serializers.ModelSerializer):
                 return getattr(self.instance, attr_name)
             return None
 
-        credit_account = get_from_request_or_instance('credit_account')
-        debit_account = get_from_request_or_instance('debit_account')
+        cash_account = get_from_request_or_instance('cash_account')
         amount = get_from_request_or_instance('amount')
+        category = get_from_request_or_instance('category')
+        if (category != Transaction.Categories.Income.value and cash_account.limit != 0 and
+                (amount >= cash_account.limit or amount >= cash_account.balance)):
+            raise serializers.ValidationError('You are exceeding your budget')
 
-        if credit_account.category not in [Account.Categories.Cash.value, Account.Categories.Salary.value]:
-            raise serializers.ValidationError("Credit Account can only be a Cash or Salary type account")
-
-        if credit_account == debit_account:
-            raise serializers.ValidationError("Credit Account can not be same as debit account")
-
-        if amount > credit_account.get_balance() and credit_account.category != Account.Categories.Salary.value:
-            raise serializers.ValidationError("Credit Account does not have enough Balance")
-
-        if debit_account.category == Account.Categories.Salary.value:
-            raise serializers.ValidationError("Debit Account can not be a Salary type account")
+        if category != Transaction.Categories.Income.value and amount > cash_account.balance:
+            raise serializers.ValidationError("Cash Account does not have enough Balance")
 
         if self.partial:
-            if self.instance and self.instance.credit_account.get_balance() + self.instance.amount < amount:
-                raise serializers.ValidationError("Credit Account does not have enough Balance")
+            if category != Transaction.Categories.Income.value:
+                if self.instance and self.instance.cash_account.balance + self.instance.amount < amount:
+                    raise serializers.ValidationError("Cash Account does not have enough Balance")
+            else:
+                if (self.instance and self.instance.cash_account.balance - self.instance.amount + amount <
+                        self.instance.cash_account.get_expenses()):
+                    raise serializers.ValidationError("Expenses Increase the new Balance")
 
         return data
 
 
-class AccountSerializer (serializers.ModelSerializer):
+class CashAccountSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Account
-        fields = ['id', 'title', 'category', 'wallet', 'budget_limit']
+        model = CashAccount
+        fields = '__all__'
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        data['debit'] = Account.objects.get(pk=data['id']).get_debit()
-        data['credit'] = Account.objects.get(pk=data['id']).get_credit()
-        data['category'] = Account.Categories.choices[data['category']-1]
-        data['balance'] = data['debit'] - data['credit']
+        data['expenses'] = instance.get_expenses()
         return data
