@@ -110,43 +110,6 @@ class CashAccountView(generics.RetrieveUpdateDestroyAPIView):
         return accounts
 
 
-# class CashAccountList(APIView):
-#
-#     def get(self, request, format=None):
-#         if request.GET.get('getAll') == 'true':
-#             accounts = CashAccount.objects.filter(user=request.user.id, category='Cash')
-#         else:
-#             accounts = CashAccount.objects.filter(user=request.user.id, category='Cash')
-#
-#         serializer = CashAccountSerializer(accounts, many=True)
-#         return Response(serializer.data)
-#
-#     def post(self, request):
-#         request.data.update({'user': request.user.id})
-#         serializer = CashAccountSerializer(data=request.data)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data, status=status.HTTP_201_CREATED)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-#
-#     def delete(self, request):
-#         try:
-#             account = CashAccount.objects.get(pk=request.data.get('accountId'))
-#             account.delete()
-#             return Response(status=status.HTTP_204_NO_CONTENT)
-#         except:
-#             return Response(status=status.HTTP_400_BAD_REQUEST)
-#
-#     def put(self, request):
-#         account_id = request.data.pop('accountId')
-#         account = CashAccount.objects.get(pk=account_id)
-#         serializer = CashAccountSerializer(account, request.data, partial=True)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
 class TransactionCategoryChoicesList(APIView):
 
     def get(self, request):
