@@ -2,10 +2,9 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework import permissions
+from rest_framework import generics
 
 from .models import MyUser as User
-
-from wallet.models import Wallet
 
 from .serializers import UserSerializer, RegistrationSerializer, MyTokenObtainPairSerializer
 
@@ -18,11 +17,16 @@ class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
 
 
-class UserList(APIView):
-    permission_classes = [permissions.IsAdminUser]
+class UserList(generics.ListAPIView):
 
-    def get(self, request):
+    serializer_class = UserSerializer
+
+    def get_queryset(self):
         users = User.objects.all()
+        return users
+
+    def list(self, request):
+        users = self.get_queryset()
         serializer = UserSerializer(users, many=True)
         return Response(serializer.data)
 
@@ -34,8 +38,6 @@ class RegisterUser(APIView):
         serializer = RegistrationSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            wallet = Wallet(user=user, start_tracking_date=datetime.now())
-            wallet.save()
             return Response({
                 'user': UserSerializer(user).data,
                 'status': status.HTTP_201_CREATED,
