@@ -25,6 +25,7 @@ class Transaction(models.Model):
     user = models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     cash_account = models.ForeignKey(to=CashAccount, on_delete=models.CASCADE)
     transaction_time = models.DateTimeField()
+    schedule_time = models.DateTimeField(auto_now=True)
 
     class Categories (models.IntegerChoices):
         Income = 0

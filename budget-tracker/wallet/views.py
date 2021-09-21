@@ -1,11 +1,17 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status, generics, filters
+from rest_framework import status, generics, filters, pagination
 
 from .models import Transaction, CashAccount
 from .serializers import TransactionSerializer, CashAccountSerializer
 
 import datetime
+
+
+class StandardPagination(pagination.PageNumberPagination):
+    page_size = 5
+    page_query_param = 'page_size'
+    max_page_size = 100
 
 
 class TransactionFilterBackend(filters.BaseFilterBackend):
@@ -26,6 +32,7 @@ class ExpenseFilterBackend(filters.BaseFilterBackend):
 class ExpenseListView(generics.ListCreateAPIView):
     queryset = Transaction.objects.all()
     serializer_class = TransactionSerializer
+    pagination_class = StandardPagination
     filter_backends = [TransactionFilterBackend, ExpenseFilterBackend, filters.OrderingFilter]
     ordering = ['-transaction_time']
 
@@ -65,6 +72,7 @@ class IncomeFilterBackend(filters.BaseFilterBackend):
 class IncomeListView(generics.ListCreateAPIView):
     queryset = Transaction.objects.all()
     serializer_class = TransactionSerializer
+    pagination_class = StandardPagination
     filter_backends = [TransactionFilterBackend, IncomeFilterBackend, filters.OrderingFilter]
     ordering = ['-transaction_time']
 
@@ -116,3 +124,24 @@ class TransactionCategoryChoicesList(APIView):
         choices = Transaction.Categories.choices
 
         return Response(choices)
+
+
+class ExpenseCategoryData(APIView):
+
+    def get(self, request):
+        def get_total_expenses(choice, account):
+            category_expenses = Transaction.objects.filter(user=request.user.id, category=choice, cash_account=account,
+                                                           transaction_time__month=request.GET.get('month'))
+            total = sum([expense.amount for expense in category_expenses])
+            return total
+
+        accounts = CashAccount.objects.filter(user=request.user.id)
+
+        data = {}
+
+        for account in accounts:
+            data[account.title] = [(choice[1], get_total_expenses(choice[0], account))
+                                   for choice in Transaction.Categories.choices if get_total_expenses(choice[0], account) > 0
+                                   and choice[1] != 'Income']
+
+        return Response(data)

@@ -10,4 +10,5 @@ urlpatterns = [
     path('cashAccountList/', views.CashAccountListView.as_view(), name='cash_accounts_list'),
     path('cashAccount/<int:pk>', views.CashAccountView.as_view(), name='cash_account_detail'),
     path('transactionCategoryList/', views.TransactionCategoryChoicesList.as_view(), name='transaction_category_list'),
+    path('categoryExpenseData', views.ExpenseCategoryData.as_view(), name='category_expense_data'),
 ]
