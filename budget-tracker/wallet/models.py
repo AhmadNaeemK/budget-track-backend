@@ -24,8 +24,7 @@ class Transaction(models.Model):
     title = models.CharField(max_length=120)
     user = models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     cash_account = models.ForeignKey(to=CashAccount, on_delete=models.CASCADE)
-    transaction_time = models.DateTimeField()
-    schedule_time = models.DateTimeField(auto_now=True)
+    transaction_time = models.DateTimeField(auto_now=True)
 
     class Categories (models.IntegerChoices):
         Income = 0
@@ -40,3 +39,12 @@ class Transaction(models.Model):
     category = models.IntegerField(choices=Categories.choices)
     amount = models.IntegerField(default=0)
 
+
+class ScheduledTransaction(models.Model):
+    title = models.CharField(max_length=120)
+    user = models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    cash_account = models.ForeignKey(to=CashAccount, on_delete=models.CASCADE)
+    scheduled_time = models.DateTimeField()
+
+    category = models.IntegerField(choices=Transaction.Categories.choices)
+    amount = models.IntegerField(default=0)

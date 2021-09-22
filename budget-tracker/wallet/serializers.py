@@ -1,6 +1,11 @@
 from rest_framework import serializers
 
-from .models import Transaction, CashAccount
+from django.conf import settings
+
+from .models import Transaction, CashAccount, ScheduledTransaction
+
+import datetime
+import pytz
 
 
 class TransactionSerializer(serializers.ModelSerializer):
@@ -47,4 +52,17 @@ class CashAccountSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data['expenses'] = instance.get_expenses()
+        return data
+
+
+class ScheduledTransactionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ScheduledTransaction
+        fields = '__all__'
+
+    def validate(self, data):
+        curr_time_zone = pytz.timezone(settings.TIME_ZONE)
+        if data.get('scheduled_time') <= datetime.datetime.now(tz=curr_time_zone):
+            raise serializers.ValidationError('Date and Time can not be less than previous date')
+
         return data

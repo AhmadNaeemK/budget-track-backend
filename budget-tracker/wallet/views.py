@@ -2,14 +2,14 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, generics, filters, pagination
 
-from .models import Transaction, CashAccount
-from .serializers import TransactionSerializer, CashAccountSerializer
+from .models import Transaction, CashAccount, ScheduledTransaction
+from .serializers import TransactionSerializer, CashAccountSerializer, ScheduledTransactionSerializer
 
 import datetime
 
 
 class StandardPagination(pagination.PageNumberPagination):
-    page_size = 5
+    page_size = 6
     page_query_param = 'page_size'
     max_page_size = 100
 
@@ -126,7 +126,7 @@ class TransactionCategoryChoicesList(APIView):
         return Response(choices)
 
 
-class ExpenseCategoryData(APIView):
+class ExpenseCategoryDataView(APIView):
 
     def get(self, request):
         def get_total_expenses(choice, account):
@@ -136,12 +136,25 @@ class ExpenseCategoryData(APIView):
             return total
 
         accounts = CashAccount.objects.filter(user=request.user.id)
-
         data = {}
-
         for account in accounts:
             data[account.title] = [(choice[1], get_total_expenses(choice[0], account))
                                    for choice in Transaction.Categories.choices if get_total_expenses(choice[0], account) > 0
                                    and choice[1] != 'Income']
-
         return Response(data)
+
+
+class ScheduledTransactionListView(generics.ListCreateAPIView):
+
+    def get_queryset(self):
+        return ScheduledTransaction.objects.filter(user=self.request.user.id)
+
+    serializer_class = ScheduledTransactionSerializer
+
+
+class ScheduledTransactionView(generics.RetrieveDestroyAPIView):
+
+    def get_queryset(self):
+        return ScheduledTransaction.objects.filter(user=self.request.user.id)
+
+    serializer_class = ScheduledTransactionSerializer
