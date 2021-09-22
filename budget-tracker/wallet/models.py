@@ -15,7 +15,7 @@ class CashAccount(models.Model):
 
     @admin.display(description='Total Expenses')
     def get_expenses(self):
-        transactions = Transaction.objects.filter(cash_account=self).exclude(category=Transaction.Categories.Income)
+        transactions = Transaction.objects.filter(cash_account=self, scheduled=False).exclude(category=Transaction.Categories.Income)
         expenses = [transaction.amount for transaction in transactions]
         return sum(expenses)
 
@@ -24,7 +24,8 @@ class Transaction(models.Model):
     title = models.CharField(max_length=120)
     user = models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     cash_account = models.ForeignKey(to=CashAccount, on_delete=models.CASCADE)
-    transaction_time = models.DateTimeField(auto_now=True)
+    transaction_time = models.DateTimeField()
+    scheduled = models.BooleanField(default=False)
 
     class Categories (models.IntegerChoices):
         Income = 0
@@ -37,14 +38,4 @@ class Transaction(models.Model):
         Other = 7
 
     category = models.IntegerField(choices=Categories.choices)
-    amount = models.IntegerField(default=0)
-
-
-class ScheduledTransaction(models.Model):
-    title = models.CharField(max_length=120)
-    user = models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    cash_account = models.ForeignKey(to=CashAccount, on_delete=models.CASCADE)
-    scheduled_time = models.DateTimeField()
-
-    category = models.IntegerField(choices=Transaction.Categories.choices)
     amount = models.IntegerField(default=0)

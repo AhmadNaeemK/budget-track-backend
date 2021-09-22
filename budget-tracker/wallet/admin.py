@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Transaction, CashAccount, ScheduledTransaction
+from .models import Transaction, CashAccount
 
 
 class TransactionAdminInline(admin.TabularInline):
@@ -19,13 +19,8 @@ class CashAccountsAdmin(admin.ModelAdmin):
 
 
 class TransactionAdmin(admin.ModelAdmin):
-    list_display = ('title', 'user', 'category', 'transaction_time', 'amount')
-
-
-class ScheduledTransactionAdmin(admin.ModelAdmin):
-    list_display = ('title', 'user', 'category', 'scheduled_time', 'amount')
+    list_display = ('title', 'user', 'category', 'transaction_time', 'amount', 'scheduled')
 
 
 admin.site.register(CashAccount, CashAccountsAdmin)
 admin.site.register(Transaction, TransactionAdmin)
-admin.site.register(ScheduledTransaction, ScheduledTransactionAdmin)

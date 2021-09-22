@@ -1,4 +1,4 @@
-from .models import ScheduledTransaction, Transaction
+from .models import Transaction
 
 import datetime
 from django.conf import settings
@@ -10,12 +10,17 @@ from apscheduler.schedulers.background import BackgroundScheduler
 def update_transactions():
     print('Trying Update')
     curr_time_zone = pytz.timezone(settings.TIME_ZONE)
-    scheduled_transactions = ScheduledTransaction.objects.all()
+    scheduled_transactions = Transaction.objects.filter(scheduled=True)
     for scheduled in scheduled_transactions:
-        if scheduled.scheduled_time <= datetime.datetime.now(tz=curr_time_zone):
-            Transaction.objects.create(user=scheduled.user, title=scheduled.title, amount=scheduled.amount,
-                                       category=scheduled.category, cash_account=scheduled.cash_account)
-            scheduled.delete()
+        if scheduled.transaction_time <= datetime.datetime.now(tz=curr_time_zone):
+            scheduled.scheduled = False
+            cash_account = scheduled.cash_account
+            if (scheduled.category == Transaction.Categories.choices[0][0]):
+                cash_account.balance += scheduled.amount
+            else:
+                cash_account.balance -= scheduled.amount
+            scheduled.save()
+            cash_account.save()
             print('Transaction completed')
 
 

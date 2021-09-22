@@ -1,32 +1,16 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status, generics, filters, pagination
+from rest_framework import generics, filters, pagination
 
-from .models import Transaction, CashAccount, ScheduledTransaction
+from .models import Transaction, CashAccount
 from .serializers import TransactionSerializer, CashAccountSerializer, ScheduledTransactionSerializer
-
-import datetime
+from .filters import TransactionFilterBackend, ScheduledTransactionFilterBackend, ExpenseFilterBackend
 
 
 class StandardPagination(pagination.PageNumberPagination):
     page_size = 6
     page_query_param = 'page_size'
     max_page_size = 100
-
-
-class TransactionFilterBackend(filters.BaseFilterBackend):
-
-    def filter_queryset(self, request, queryset, view):
-        month = request.GET.get('month') or datetime.date.today().month
-        transactions = queryset.filter(user=request.user.id, transaction_time__month=month)
-        return transactions
-
-
-class ExpenseFilterBackend(filters.BaseFilterBackend):
-    def filter_queryset(self, request, queryset, view):
-        income = Transaction.Categories.Income.value
-        expenses = queryset.exclude(category=income)
-        return expenses
 
 
 class ExpenseListView(generics.ListCreateAPIView):
@@ -145,16 +129,12 @@ class ExpenseCategoryDataView(APIView):
 
 
 class ScheduledTransactionListView(generics.ListCreateAPIView):
-
-    def get_queryset(self):
-        return ScheduledTransaction.objects.filter(user=self.request.user.id)
-
+    queryset = Transaction.objects.all()
     serializer_class = ScheduledTransactionSerializer
+    filter_backends = [ScheduledTransactionFilterBackend, filters.OrderingFilter]
 
 
 class ScheduledTransactionView(generics.RetrieveDestroyAPIView):
-
-    def get_queryset(self):
-        return ScheduledTransaction.objects.filter(user=self.request.user.id)
-
+    queryset = Transaction.objects.all()
     serializer_class = ScheduledTransactionSerializer
+    filter_backends = [ScheduledTransactionFilterBackend, filters.OrderingFilter]
