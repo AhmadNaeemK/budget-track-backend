@@ -19,7 +19,7 @@ class CashAccountsAdmin(admin.ModelAdmin):
 
 
 class TransactionAdmin(admin.ModelAdmin):
-    list_display = ('title', 'user', 'category', 'transaction_time', 'amount')
+    list_display = ('title', 'user', 'category', 'transaction_time', 'amount', 'scheduled')
 
 
 admin.site.register(CashAccount, CashAccountsAdmin)
