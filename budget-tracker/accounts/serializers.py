@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from .models import MyUser as User
+from .models import MyUser as User, FriendRequest
 from wallet.models import CashAccount
 
 
@@ -41,4 +41,16 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         data.update({'user': self.user.username})
         data.update({'id': self.user.id})
         # and everything else you want to send in the response
+        return data
+
+
+class FriendRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FriendRequest
+        fields = '__all__'
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['user'] = User.objects.get(pk=data['user']).username
+        data['receiver'] = User.objects.get(pk=data['receiver']).username
         return data

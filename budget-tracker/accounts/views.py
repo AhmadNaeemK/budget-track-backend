@@ -2,15 +2,21 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework import permissions
-from rest_framework import generics
+from rest_framework import generics, pagination, status
 
-from .models import MyUser as User
+from .models import MyUser as User, FriendRequest
 
-from .serializers import UserSerializer, RegistrationSerializer, MyTokenObtainPairSerializer
+from .filters import UserFilterBackend, ReceiverFilterBackend
+
+from .serializers import UserSerializer, RegistrationSerializer, MyTokenObtainPairSerializer, FriendRequestSerializer
 
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from datetime import datetime
+
+class UserPagination(pagination.PageNumberPagination):
+    page_size = 2
+    page_size_query_param = 'page_size'
+    max_page_size = 50
 
 
 class MyTokenObtainPairView(TokenObtainPairView):
@@ -20,15 +26,8 @@ class MyTokenObtainPairView(TokenObtainPairView):
 class UserList(generics.ListAPIView):
 
     serializer_class = UserSerializer
-
-    def get_queryset(self):
-        users = User.objects.all()
-        return users
-
-    def list(self, request):
-        users = self.get_queryset()
-        serializer = UserSerializer(users, many=True)
-        return Response(serializer.data)
+    pagination_class = UserPagination
+    queryset = User.objects.all().order_by('username')
 
 
 class RegisterUser(APIView):
@@ -50,3 +49,56 @@ class LogoutUser(APIView):
     def get(self, request):
         print(request.user)
         return Response('User Logged Out')
+
+
+class SentFriendRequestListView(generics.ListCreateAPIView):
+    queryset = FriendRequest.objects.all()
+    filter_backends = [UserFilterBackend]
+    serializer_class = FriendRequestSerializer
+
+
+class ReceivedFriendRequestListView(generics.ListAPIView):
+    queryset = FriendRequest.objects.all()
+    filter_backends = [ReceiverFilterBackend]
+    serializer_class = FriendRequestSerializer
+
+
+class FriendRequestView(generics.RetrieveDestroyAPIView):
+    queryset = FriendRequest.objects.all()
+    serializer_class = FriendRequestSerializer
+
+
+class AcceptFriendRequestView(APIView):
+
+    def post(self, request):
+        request_id = request.POST.get('requestId')
+        friend_request = FriendRequest.objects.get(pk=int(request_id))
+        if friend_request.receiver.id == request.user.id:
+            friend_request.user.friends.add(friend_request.receiver)
+            friend_request.receiver.friends.add(friend_request.user)
+            friend_request.delete()
+            return Response('Request Accepted', status=status.HTTP_201_CREATED)
+        else:
+            return Response('Request Not Accepted', status=status.HTTP_400_BAD_REQUEST)
+
+
+class RemoveFriendView(APIView):
+
+    def post(self, request):
+        user = User.objects.get(pk=request.user.id)
+        friend_to_be_removed = user.friends.get(pk=request.POST.get('friendToBeRemoved'))
+        try:
+            user.friends.remove(friend_to_be_removed)
+            friend_to_be_removed.friends.remove(user)
+            return Response('Friend Removed', status=status.HTTP_204_NO_CONTENT)
+        except:
+            return Response('Could not Remove Friend', status=status.HTTP_400_BAD_REQUEST)
+
+
+class FriendsListView(generics.ListAPIView):
+    serializer_class = UserSerializer
+
+    def get_queryset(self):
+        user = User.objects.get(pk=self.request.user.id)
+        friends = user.friends.all()
+        return friends
