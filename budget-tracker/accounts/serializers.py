@@ -49,6 +49,16 @@ class FriendRequestSerializer(serializers.ModelSerializer):
         model = FriendRequest
         fields = '__all__'
 
+    def validate(self, data):
+
+        if data['user'] == data['receiver']:
+            raise serializers.ValidationError("Request Sender and Receiver cannot be same")
+
+        if data['receiver'] in data['user'].friends.all():
+            raise serializers.ValidationError("Already Friends")
+
+        return data
+
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data['user'] = User.objects.get(pk=data['user']).username

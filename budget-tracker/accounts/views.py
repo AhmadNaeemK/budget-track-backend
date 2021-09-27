@@ -4,6 +4,8 @@ from rest_framework.views import APIView
 from rest_framework import permissions
 from rest_framework import generics, pagination, status
 
+from django.db.models import Q
+
 from .models import MyUser as User, FriendRequest
 
 from .filters import UserFilterBackend, ReceiverFilterBackend
@@ -14,7 +16,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 
 
 class UserPagination(pagination.PageNumberPagination):
-    page_size = 2
+    page_size = 5
     page_size_query_param = 'page_size'
     max_page_size = 50
 
@@ -27,7 +29,13 @@ class UserList(generics.ListAPIView):
 
     serializer_class = UserSerializer
     pagination_class = UserPagination
-    queryset = User.objects.all().order_by('username')
+
+    def get_queryset(self):
+        users = User.objects.exclude(id=self.request.user.id)
+        friend_request_list = [req.receiver.id for req in FriendRequest.objects.filter(user=self.request.user.id)]
+        friends_list = [friend.id for friend in User.objects.get(pk= self.request.user.id).friends.all()]
+        unsent_request_users = users.exclude(Q(id__in=friend_request_list + friends_list))
+        return unsent_request_users
 
 
 class RegisterUser(APIView):
@@ -70,9 +78,8 @@ class FriendRequestView(generics.RetrieveDestroyAPIView):
 
 class AcceptFriendRequestView(APIView):
 
-    def post(self, request):
-        request_id = request.POST.get('requestId')
-        friend_request = FriendRequest.objects.get(pk=int(request_id))
+    def get(self, request, pk):
+        friend_request = FriendRequest.objects.get(pk=pk)
         if friend_request.receiver.id == request.user.id:
             friend_request.user.friends.add(friend_request.receiver)
             friend_request.receiver.friends.add(friend_request.user)
@@ -84,9 +91,9 @@ class AcceptFriendRequestView(APIView):
 
 class RemoveFriendView(APIView):
 
-    def post(self, request):
+    def get(self, request, pk):
         user = User.objects.get(pk=request.user.id)
-        friend_to_be_removed = user.friends.get(pk=request.POST.get('friendToBeRemoved'))
+        friend_to_be_removed = user.friends.get(pk=pk)
         try:
             user.friends.remove(friend_to_be_removed)
             friend_to_be_removed.friends.remove(user)
@@ -97,6 +104,7 @@ class RemoveFriendView(APIView):
 
 class FriendsListView(generics.ListAPIView):
     serializer_class = UserSerializer
+    pagination_class = UserPagination
 
     def get_queryset(self):
         user = User.objects.get(pk=self.request.user.id)

@@ -15,7 +15,7 @@ urlpatterns = [
     path('receivedFriendRequestList/', views.ReceivedFriendRequestListView.as_view(),
          name='received_friend_request_list'),
     path('friendRequest/<int:pk>', views.FriendRequestView.as_view(), name='friend_request'),
-    path('acceptRequest/', views.AcceptFriendRequestView.as_view(), name='accept_friend_request'),
-    path('removeFriend/', views.RemoveFriendView.as_view(), name='remove_friend'),
+    path('acceptRequest/<int:pk>', views.AcceptFriendRequestView.as_view(), name='accept_friend_request'),
+    path('removeFriend/<int:pk>', views.RemoveFriendView.as_view(), name='remove_friend'),
     path('friendsList/', views.FriendsListView.as_view(), name='friends_list'),
 ]

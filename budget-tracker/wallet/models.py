@@ -39,3 +39,6 @@ class Transaction(models.Model):
 
     category = models.IntegerField(choices=Categories.choices)
     amount = models.IntegerField(default=0)
+
+
+
