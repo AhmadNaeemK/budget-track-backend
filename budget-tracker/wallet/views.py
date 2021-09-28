@@ -1,9 +1,12 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import generics, filters, pagination
+from rest_framework import generics, filters, pagination, status
 
-from .models import Transaction, CashAccount
+from .models import Transaction, CashAccount, SplitTransaction
+from accounts.models import MyUser as User
+
 from .serializers import TransactionSerializer, CashAccountSerializer, ScheduledTransactionSerializer
+from .serializers import SplitTransactionSerializer
 from .filters import TransactionFilterBackend, ScheduledTransactionFilterBackend, ExpenseFilterBackend
 
 
@@ -123,7 +126,8 @@ class ExpenseCategoryDataView(APIView):
         data = {}
         for account in accounts:
             data[account.title] = [(choice[1], get_total_expenses(choice[0], account))
-                                   for choice in Transaction.Categories.choices if get_total_expenses(choice[0], account) > 0
+                                   for choice in Transaction.Categories.choices if
+                                   get_total_expenses(choice[0], account) > 0
                                    and choice[1] != 'Income']
         return Response(data)
 
@@ -138,3 +142,59 @@ class ScheduledTransactionView(generics.RetrieveDestroyAPIView):
     queryset = Transaction.objects.all()
     serializer_class = ScheduledTransactionSerializer
     filter_backends = [ScheduledTransactionFilterBackend, filters.OrderingFilter]
+
+
+class SplitTransactionListView(generics.ListCreateAPIView):
+    serializer_class = SplitTransactionSerializer
+    pagination_class = StandardPagination
+
+    def get_queryset(self):
+        if self.request.GET.get('my_split') == 'true':
+            splits = SplitTransaction.objects.filter(creator=self.request.user.id)
+        else:
+            splits = SplitTransaction.objects.filter(users_in_split__id__contains=self.request.user.id)
+        return splits.order_by('id')
+
+
+class SplitTransactionView(generics.RetrieveDestroyAPIView):
+    queryset = SplitTransaction.objects.all()
+    serializer_class = SplitTransactionSerializer
+
+
+class PaySplit(APIView):
+
+    def post(self, request):
+        split = SplitTransaction.objects.get(pk=request.data.get('split_id'))
+        payment_transaction_title = "{split_title} payed by {split_creator}".format(split_title=split.title,
+                                                                                    split_creator=split.creator)
+        payment_transaction_serializer = TransactionSerializer(data={'title': payment_transaction_title,
+                                                                     'user': request.user.id,
+                                                                     'cash_account': CashAccount.objects.get(
+                                                                         user=request.user.id,
+                                                                         title='Cash').id,
+                                                                     'category': split.category,
+                                                                     'amount': request.data.get('amount'),
+                                                                     })
+        user = User.objects.get(pk=request.user.id)
+        receiving_transaction_title = "Payment for {split_title} payed by {user}".format(split_title=split.title,
+                                                                                         user=user.username)
+        receiving_transaction_serializer = TransactionSerializer(data={'title': receiving_transaction_title,
+                                                                       'user': split.creator.id,
+                                                                       'cash_account': CashAccount.objects.get(
+                                                                           user=split.creator.id,
+                                                                           title='Cash').id,
+                                                                       'category': Transaction.Categories.choices[0][0],
+                                                                       'amount': request.data.get('amount'),
+                                                                       })
+
+        if payment_transaction_serializer.is_valid() and receiving_transaction_serializer.is_valid():
+            payment_transaction_serializer.save()
+            receiving_transaction_serializer.save()
+
+            split.payed_users.add(User.objects.get(pk=request.user.id))
+            split.users_in_split.remove(User.objects.get(pk=request.user.id))
+
+            return Response("Payment Successful")
+
+        else:
+            return Response(status=status.HTTP_400_BAD_REQUEST)

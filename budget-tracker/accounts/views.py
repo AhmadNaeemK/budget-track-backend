@@ -8,6 +8,7 @@ from django.db.models import Q
 
 from .models import MyUser as User, FriendRequest
 
+from rest_framework import filters
 from .filters import UserFilterBackend, ReceiverFilterBackend
 
 from .serializers import UserSerializer, RegistrationSerializer, MyTokenObtainPairSerializer, FriendRequestSerializer
@@ -29,13 +30,15 @@ class UserList(generics.ListAPIView):
 
     serializer_class = UserSerializer
     pagination_class = UserPagination
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['username']
 
     def get_queryset(self):
         users = User.objects.exclude(id=self.request.user.id)
         friend_request_list = [req.receiver.id for req in FriendRequest.objects.filter(user=self.request.user.id)]
         friends_list = [friend.id for friend in User.objects.get(pk= self.request.user.id).friends.all()]
         unsent_request_users = users.exclude(Q(id__in=friend_request_list + friends_list))
-        return unsent_request_users
+        return unsent_request_users.order_by('username')
 
 
 class RegisterUser(APIView):
@@ -105,8 +108,10 @@ class RemoveFriendView(APIView):
 class FriendsListView(generics.ListAPIView):
     serializer_class = UserSerializer
     pagination_class = UserPagination
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['username']
 
     def get_queryset(self):
         user = User.objects.get(pk=self.request.user.id)
-        friends = user.friends.all()
+        friends = user.friends.all().order_by('username')
         return friends

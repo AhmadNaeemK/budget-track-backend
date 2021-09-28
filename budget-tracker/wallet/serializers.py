@@ -2,7 +2,8 @@ from rest_framework import serializers
 
 from django.conf import settings
 
-from .models import Transaction, CashAccount
+from .models import Transaction, CashAccount, SplitTransaction
+from accounts.models import MyUser
 
 import datetime
 import pytz
@@ -65,4 +66,20 @@ class ScheduledTransactionSerializer(serializers.ModelSerializer):
         if data.get('transaction_time') <= datetime.datetime.now(tz=curr_time_zone):
             raise serializers.ValidationError('Date and Time can not be less than previous date')
 
+        return data
+
+
+class SplitTransactionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SplitTransaction
+        fields = '__all__'
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['category'] = Transaction.Categories.choices[data['category']][1]
+        data['creator'] = MyUser.objects.get(pk=data['creator']).username
+        data['users_in_split'] = [(user.id, user.username)
+                                  for user in MyUser.objects.filter(id__in=data['users_in_split'])]
+        data['payed_users'] = [(user.id, user.username)
+                                  for user in MyUser.objects.filter(id__in=data['payed_users'])]
         return data
