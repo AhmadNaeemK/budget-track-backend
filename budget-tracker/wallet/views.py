@@ -157,7 +157,7 @@ class SplitTransactionListView(generics.ListCreateAPIView):
 
 
 class SplitTransactionView(generics.RetrieveDestroyAPIView):
-    queryset = SplitTransaction.objects.all()
+    queryset = SplitTransaction.objects.all().order_by('creator__username')
     serializer_class = SplitTransactionSerializer
 
 

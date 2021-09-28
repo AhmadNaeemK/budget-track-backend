@@ -30,7 +30,7 @@ class UserList(generics.ListAPIView):
 
     serializer_class = UserSerializer
     pagination_class = UserPagination
-    filter_backends = [filters.SearchFilter]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['username']
 
     def get_queryset(self):
@@ -108,7 +108,7 @@ class RemoveFriendView(APIView):
 class FriendsListView(generics.ListAPIView):
     serializer_class = UserSerializer
     pagination_class = UserPagination
-    filter_backends = [filters.SearchFilter]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['username']
 
     def get_queryset(self):
