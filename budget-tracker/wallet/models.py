@@ -47,8 +47,17 @@ class Transaction(models.Model):
 class SplitTransaction (models.Model):
 
     title = models.CharField(max_length=120)
-    creator = models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='creator')
-    users_in_split = models.ManyToManyField(to=settings.AUTH_USER_MODEL, related_name='split_users')
     category = models.IntegerField(choices=Transaction.Categories.choices)
     total_amount = models.IntegerField(default=0)
-    payed_users = models.ManyToManyField(to=settings.AUTH_USER_MODEL, related_name='payedUsers', blank=True)
+    creator = models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='creator')
+    paying_friend = models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='paying_user')
+    all_friends_involved = models.ManyToManyField(to=settings.AUTH_USER_MODEL, related_name='involved_friends')
+    friends_paid = models.ManyToManyField(to=settings.AUTH_USER_MODEL, related_name='paid_friends')
+
+    @admin.display(description="Friends Involved")
+    def get_all_friends_involved(self):
+        return self.all_friends_involved.all()
+
+    @admin.display(description="Friend Who Paid")
+    def get_friends_paid(self):
+        return self.friends_paid.all()

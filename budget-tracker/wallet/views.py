@@ -1,13 +1,14 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import generics, filters, pagination, status
+from rest_framework import generics, filters, pagination, status, serializers
 
 from .models import Transaction, CashAccount, SplitTransaction
-from accounts.models import MyUser as User
+from accounts.models import EmailAuthenticatedUser as User
 
 from .serializers import TransactionSerializer, CashAccountSerializer, ScheduledTransactionSerializer
 from .serializers import SplitTransactionSerializer
 from .filters import TransactionFilterBackend, ScheduledTransactionFilterBackend, ExpenseFilterBackend
+from .filters import IncomeFilterBackend
 
 
 class StandardPagination(pagination.PageNumberPagination):
@@ -24,6 +25,8 @@ class ExpenseListView(generics.ListCreateAPIView):
     ordering = ['-transaction_time']
 
     def perform_create(self, serializer):
+        if serializer.validated_data.get('category') == Transaction.Categories.Income.value:
+            raise serializers.ValidationError('Income can not be an expense')
         this_cash_account = serializer.validated_data.get('cash_account')
         new_balance = this_cash_account.balance - serializer.validated_data.get('amount')
         this_cash_account.balance = new_balance
@@ -49,13 +52,6 @@ class ExpenseView(generics.RetrieveUpdateDestroyAPIView):
         instance.delete()
 
 
-class IncomeFilterBackend(filters.BaseFilterBackend):
-    def filter_queryset(self, request, queryset, view):
-        income = Transaction.Categories.Income.value
-        expenses = queryset.filter(category=income)
-        return expenses
-
-
 class IncomeListView(generics.ListCreateAPIView):
     queryset = Transaction.objects.all()
     serializer_class = TransactionSerializer
@@ -64,6 +60,8 @@ class IncomeListView(generics.ListCreateAPIView):
     ordering = ['-transaction_time']
 
     def perform_create(self, serializer):
+        if serializer.validated_data.get('category') != Transaction.Categories.Income.value:
+            raise serializers.ValidationError('Income can not be an expense')
         this_cash_account = serializer.validated_data.get('cash_account')
         new_balance = this_cash_account.balance + serializer.validated_data.get('amount')
         this_cash_account.balance = new_balance
@@ -147,13 +145,7 @@ class ScheduledTransactionView(generics.RetrieveDestroyAPIView):
 class SplitTransactionListView(generics.ListCreateAPIView):
     serializer_class = SplitTransactionSerializer
     pagination_class = StandardPagination
-
-    def get_queryset(self):
-        if self.request.GET.get('my_split') == 'true':
-            splits = SplitTransaction.objects.filter(creator=self.request.user.id)
-        else:
-            splits = SplitTransaction.objects.filter(users_in_split__id__contains=self.request.user.id)
-        return splits.order_by('id')
+    queryset = SplitTransaction.objects.all().order_by('creator__username')
 
 
 class SplitTransactionView(generics.RetrieveDestroyAPIView):
@@ -165,7 +157,7 @@ class PaySplit(APIView):
 
     def post(self, request):
         split = SplitTransaction.objects.get(pk=request.data.get('split_id'))
-        payment_transaction_title = "{split_title} payed by {split_creator}".format(split_title=split.title,
+        payment_transaction_title = "{split_title} paid by {split_creator}".format(split_title=split.title,
                                                                                     split_creator=split.creator)
         payment_transaction_serializer = TransactionSerializer(data={'title': payment_transaction_title,
                                                                      'user': request.user.id,
@@ -176,7 +168,7 @@ class PaySplit(APIView):
                                                                      'amount': request.data.get('amount'),
                                                                      })
         user = User.objects.get(pk=request.user.id)
-        receiving_transaction_title = "Payment for {split_title} payed by {user}".format(split_title=split.title,
+        receiving_transaction_title = "Payment for {split_title} paid by {user}".format(split_title=split.title,
                                                                                          user=user.username)
         receiving_transaction_serializer = TransactionSerializer(data={'title': receiving_transaction_title,
                                                                        'user': split.creator.id,
