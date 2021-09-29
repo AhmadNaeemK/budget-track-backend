@@ -3,7 +3,8 @@ from rest_framework import serializers
 from django.conf import settings
 
 from .models import Transaction, CashAccount, SplitTransaction
-from accounts.models import MyUser
+from accounts.models import EmailAuthenticatedUser
+from accounts.serializers import UserSerializer
 
 import datetime
 import pytz
@@ -27,7 +28,7 @@ class TransactionSerializer(serializers.ModelSerializer):
         amount = get_from_request_or_instance('amount')
         category = get_from_request_or_instance('category')
         if (category != Transaction.Categories.Income.value and cash_account.limit != 0 and
-                (amount >= cash_account.limit or amount >= cash_account.balance)):
+                (cash_account.get_expenses() + amount > cash_account.limit)):
             raise serializers.ValidationError('You are exceeding your budget')
 
         if category != Transaction.Categories.Income.value and amount > cash_account.balance:
@@ -72,14 +73,24 @@ class ScheduledTransactionSerializer(serializers.ModelSerializer):
 class SplitTransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = SplitTransaction
-        fields = '__all__'
+        fields = ['id', 'title', 'category', 'total_amount',
+                  'creator', 'paying_friend', 'all_friends_involved',
+                  'friends_paid']
 
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        data['category'] = Transaction.Categories.choices[data['category']][1]
-        data['creator'] = MyUser.objects.get(pk=data['creator']).username
-        data['users_in_split'] = [(user.id, user.username)
-                                  for user in MyUser.objects.filter(id__in=data['users_in_split'])]
-        data['payed_users'] = [(user.id, user.username)
-                                  for user in MyUser.objects.filter(id__in=data['payed_users'])]
-        return data
+    creator = UserSerializer()
+    paying_friend = UserSerializer()
+    all_friends_involved = UserSerializer(many=True)
+    friends_paid = UserSerializer(required=False, many=True)
+
+
+
+
+    # def to_representation(self, instance):
+    #     data = super().to_representation(instance)
+    #     data['category'] = Transaction.Categories.choices[data['category']][1]
+    #     data['creator'] = MyUser.objects.get(pk=data['creator']).username
+    #     data['users_in_split'] = [(user.id, user.username)
+    #                               for user in MyUser.objects.filter(id__in=data['users_in_split'])]
+    #     data['payed_users'] = [(user.id, user.username)
+    #                               for user in MyUser.objects.filter(id__in=data['payed_users'])]
+    #     return data

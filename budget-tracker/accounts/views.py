@@ -6,7 +6,7 @@ from rest_framework import generics, pagination, status
 
 from django.db.models import Q
 
-from .models import MyUser as User, FriendRequest
+from .models import EmailAuthenticatedUser as User, FriendRequest
 
 from rest_framework import filters
 from .filters import UserFilterBackend, ReceiverFilterBackend
