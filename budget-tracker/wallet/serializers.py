@@ -82,15 +82,3 @@ class SplitTransactionSerializer(serializers.ModelSerializer):
     all_friends_involved = UserSerializer(many=True)
     friends_paid = UserSerializer(required=False, many=True)
 
-
-
-
-    # def to_representation(self, instance):
-    #     data = super().to_representation(instance)
-    #     data['category'] = Transaction.Categories.choices[data['category']][1]
-    #     data['creator'] = MyUser.objects.get(pk=data['creator']).username
-    #     data['users_in_split'] = [(user.id, user.username)
-    #                               for user in MyUser.objects.filter(id__in=data['users_in_split'])]
-    #     data['payed_users'] = [(user.id, user.username)
-    #                               for user in MyUser.objects.filter(id__in=data['payed_users'])]
-    #     return data
