@@ -151,7 +151,7 @@ CORS_ALLOWED_ORIGINS = [
 
 # Authentication User
 
-AUTH_USER_MODEL = 'accounts.MyUser'
+AUTH_USER_MODEL = 'accounts.EmailAuthenticatedUser'
 
 # SimpleJWT settings
 SIMPLE_JWT = {

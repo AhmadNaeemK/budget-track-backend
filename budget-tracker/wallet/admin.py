@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Transaction, CashAccount
+from .models import Transaction, CashAccount, SplitTransaction
 
 
 class TransactionAdminInline(admin.TabularInline):
@@ -19,8 +19,17 @@ class CashAccountsAdmin(admin.ModelAdmin):
 
 
 class TransactionAdmin(admin.ModelAdmin):
-    list_display = ('title', 'user', 'category', 'transaction_time', 'amount', 'scheduled')
+    list_display = ('title', 'user', 'category', 'transaction_time', 'amount', 'scheduled', 'split_expense')
+
+
+class SplitTransactionAdmin(admin.ModelAdmin):
+    list_display = ('title', 'creator', 'category', 'paying_friend', 'get_friends_in_split')
+
+    def get_friends_in_split(self, obj):
+        return "\n".join([user.username for user in obj.get_all_friends_involved()])
+
 
 
 admin.site.register(CashAccount, CashAccountsAdmin)
 admin.site.register(Transaction, TransactionAdmin)
+admin.site.register(SplitTransaction, SplitTransactionAdmin)

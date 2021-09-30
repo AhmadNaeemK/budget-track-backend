@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from .models import MyUser as User, FriendRequest
+from .models import EmailAuthenticatedUser as User, FriendRequest
 from wallet.models import CashAccount
 
 

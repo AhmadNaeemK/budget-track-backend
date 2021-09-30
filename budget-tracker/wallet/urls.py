@@ -12,5 +12,9 @@ urlpatterns = [
     path('transactionCategoryList/', views.TransactionCategoryChoicesList.as_view(), name='transaction_category_list'),
     path('categoryExpenseData', views.ExpenseCategoryDataView.as_view(), name='category_expense_data'),
     path('scheduledTransactionList/', views.ScheduledTransactionListView.as_view(), name='scheduled_transaction_list'),
-    path('scheduledTransaction/<int:pk>', views.ScheduledTransactionView.as_view(), name='scheduled_transaction')
+    path('scheduledTransaction/<int:pk>', views.ScheduledTransactionView.as_view(), name='scheduled_transaction'),
+    path('splitTransactionList/', views.SplitTransactionListView.as_view(), name='split_transaction_list'),
+    path('splitTransaction/<int:pk>', views.SplitTransactionView.as_view(), name='split_transaction'),
+    path('paySplit/', views.PaySplit.as_view(), name='pay_split'),
+    path('transactionsInSplit', views.TransactionsWithSplit.as_view(), name='transactions_with_split')
 ]

@@ -1,10 +1,18 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import generics, filters, pagination
+from rest_framework import generics, filters, pagination, status, serializers
 
-from .models import Transaction, CashAccount
+from django.db.models import Q
+
+from .models import Transaction, CashAccount, SplitTransaction, TransactionCategories
+from accounts.models import EmailAuthenticatedUser as User
+
 from .serializers import TransactionSerializer, CashAccountSerializer, ScheduledTransactionSerializer
+from .serializers import SplitTransactionSerializer
+
 from .filters import TransactionFilterBackend, ScheduledTransactionFilterBackend, ExpenseFilterBackend
+from .filters import IncomeFilterBackend
+from accounts.filters import UserFilterBackend
 
 
 class StandardPagination(pagination.PageNumberPagination):
@@ -21,6 +29,8 @@ class ExpenseListView(generics.ListCreateAPIView):
     ordering = ['-transaction_time']
 
     def perform_create(self, serializer):
+        if serializer.validated_data.get('category') == TransactionCategories.Income.value:
+            raise serializers.ValidationError('Income can not be an expense')
         this_cash_account = serializer.validated_data.get('cash_account')
         new_balance = this_cash_account.balance - serializer.validated_data.get('amount')
         this_cash_account.balance = new_balance
@@ -46,13 +56,6 @@ class ExpenseView(generics.RetrieveUpdateDestroyAPIView):
         instance.delete()
 
 
-class IncomeFilterBackend(filters.BaseFilterBackend):
-    def filter_queryset(self, request, queryset, view):
-        income = Transaction.Categories.Income.value
-        expenses = queryset.filter(category=income)
-        return expenses
-
-
 class IncomeListView(generics.ListCreateAPIView):
     queryset = Transaction.objects.all()
     serializer_class = TransactionSerializer
@@ -61,6 +64,8 @@ class IncomeListView(generics.ListCreateAPIView):
     ordering = ['-transaction_time']
 
     def perform_create(self, serializer):
+        if serializer.validated_data.get('category') != TransactionCategories.Income.value:
+            raise serializers.ValidationError('Income can not be an expense')
         this_cash_account = serializer.validated_data.get('cash_account')
         new_balance = this_cash_account.balance + serializer.validated_data.get('amount')
         this_cash_account.balance = new_balance
@@ -105,7 +110,7 @@ class CashAccountView(generics.RetrieveUpdateDestroyAPIView):
 class TransactionCategoryChoicesList(APIView):
 
     def get(self, request):
-        choices = Transaction.Categories.choices
+        choices = TransactionCategories.choices
 
         return Response(choices)
 
@@ -123,7 +128,8 @@ class ExpenseCategoryDataView(APIView):
         data = {}
         for account in accounts:
             data[account.title] = [(choice[1], get_total_expenses(choice[0], account))
-                                   for choice in Transaction.Categories.choices if get_total_expenses(choice[0], account) > 0
+                                   for choice in TransactionCategories.choices if
+                                   get_total_expenses(choice[0], account) > 0
                                    and choice[1] != 'Income']
         return Response(data)
 
@@ -138,3 +144,65 @@ class ScheduledTransactionView(generics.RetrieveDestroyAPIView):
     queryset = Transaction.objects.all()
     serializer_class = ScheduledTransactionSerializer
     filter_backends = [ScheduledTransactionFilterBackend, filters.OrderingFilter]
+
+
+class SplitTransactionListView(generics.ListCreateAPIView):
+    serializer_class = SplitTransactionSerializer
+    pagination_class = StandardPagination
+
+    def get_queryset(self):
+        return SplitTransaction.objects.filter(Q(creator=self.request.user.id) | Q(paying_friend=self.request.user.id) |
+                                               Q(all_friends_involved__id=self.request.user.id)
+                                               ).distinct().order_by('creator__username')
+
+
+class SplitTransactionView(generics.RetrieveDestroyAPIView):
+    queryset = SplitTransaction.objects.all()
+    serializer_class = SplitTransactionSerializer
+
+
+class PaySplit(APIView):
+
+    def post(self, request):
+        split = SplitTransaction.objects.get(pk=request.data.get('split_id'))
+
+        payment_transaction_title = "{split_title} paid by {split_creator}".format(split_title=split.title,
+                                                                                   split_creator=split.creator)
+        payment_transaction_serializer = TransactionSerializer(data={'title': payment_transaction_title,
+                                                                     'user': request.user.id,
+                                                                     'cash_account': CashAccount.objects.get(
+                                                                         user=request.user.id,
+                                                                         title='Cash').id,
+                                                                     'category': split.category,
+                                                                     'amount': request.data.get('amount'),
+                                                                     'split_expense': split.id
+                                                                     })
+        user = User.objects.get(pk=request.user.id)
+        receiving_transaction_title = "Payment for {split_title} paid by {user}".format(split_title=split.title,
+                                                                                        user=user.username)
+        receiving_transaction_serializer = TransactionSerializer(data={'title': receiving_transaction_title,
+                                                                       'user': split.paying_friend.id,
+                                                                       'cash_account': CashAccount.objects.get(
+                                                                           user=split.paying_friend.id,
+                                                                           title='Cash').id,
+                                                                       'category': TransactionCategories.choices[0][0],
+                                                                       'amount': request.data.get('amount'),
+                                                                       'split_expense': split.id
+                                                                       })
+
+        if payment_transaction_serializer.is_valid() and receiving_transaction_serializer.is_valid():
+            payment_transaction_serializer.save()
+            receiving_transaction_serializer.save()
+
+            return Response("Payment Successful")
+
+        else:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+
+class TransactionsWithSplit(generics.ListAPIView):
+    serializer_class = TransactionSerializer
+    pagination_class = StandardPagination
+
+    def get_queryset(self):
+        return Transaction.objects.filter(user=self.request.user.id, split_expense__isnull=False)
