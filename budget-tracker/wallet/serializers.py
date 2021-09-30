@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from django.conf import settings
 
-from .models import Transaction, CashAccount, SplitTransaction
+from .models import Transaction, CashAccount, SplitTransaction, TransactionCategories
 from accounts.models import EmailAuthenticatedUser
 from accounts.serializers import UserSerializer
 
@@ -27,15 +27,15 @@ class TransactionSerializer(serializers.ModelSerializer):
         cash_account = get_from_request_or_instance('cash_account')
         amount = get_from_request_or_instance('amount')
         category = get_from_request_or_instance('category')
-        if (category != Transaction.Categories.Income.value and cash_account.limit != 0 and
+        if (category != TransactionCategories.Income.value and cash_account.limit != 0 and
                 (cash_account.get_expenses() + amount > cash_account.limit)):
             raise serializers.ValidationError('You are exceeding your budget')
 
-        if category != Transaction.Categories.Income.value and amount > cash_account.balance:
+        if not self.partial and category != TransactionCategories.Income.value and amount > cash_account.balance:
             raise serializers.ValidationError("Cash Account does not have enough Balance")
 
         if self.partial:
-            if category != Transaction.Categories.Income.value:
+            if category != TransactionCategories.Income.value:
                 if self.instance and self.instance.cash_account.balance + self.instance.amount < amount:
                     raise serializers.ValidationError("Cash Account does not have enough Balance")
             else:
@@ -73,12 +73,18 @@ class ScheduledTransactionSerializer(serializers.ModelSerializer):
 class SplitTransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = SplitTransaction
-        fields = ['id', 'title', 'category', 'total_amount',
-                  'creator', 'paying_friend', 'all_friends_involved',
-                  'friends_paid']
+        fields = ['id', 'title', 'category', 'total_amount', 'creator', 'paying_friend', 'all_friends_involved']
 
-    creator = UserSerializer()
-    paying_friend = UserSerializer()
-    all_friends_involved = UserSerializer(many=True)
-    friends_paid = UserSerializer(required=False, many=True)
+    creator = UserSerializer(read_only=True)
+    paying_friend = UserSerializer(read_only=True)
+    all_friends_involved = UserSerializer(many=True, read_only=True)
+
+    def create(self, validated_data):
+        validated_data['creator'] = EmailAuthenticatedUser.objects.get(pk=self.initial_data.get('creator'))
+        validated_data['paying_friend'] = EmailAuthenticatedUser.objects.get(pk=self.initial_data.get('paying_friend'))
+        split = SplitTransaction.objects.create(**validated_data)
+        friends_involved = EmailAuthenticatedUser.objects.filter(
+            pk__in=[int(friend_id) for friend_id in self.initial_data.get('all_friends_involved')])
+        split.all_friends_involved.set(friends_involved)
+        return split
 

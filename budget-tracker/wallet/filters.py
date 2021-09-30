@@ -1,6 +1,6 @@
 import datetime
 from rest_framework import filters
-from .models import Transaction
+from .models import Transaction, TransactionCategories
 
 
 class TransactionFilterBackend(filters.BaseFilterBackend):
@@ -20,13 +20,13 @@ class ScheduledTransactionFilterBackend(filters.BaseFilterBackend):
 
 class ExpenseFilterBackend(filters.BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
-        income = Transaction.Categories.Income.value
+        income = TransactionCategories.Income.value
         expenses = queryset.exclude(category=income)
         return expenses
 
 
 class IncomeFilterBackend(filters.BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
-        income = Transaction.Categories.Income.value
+        income = TransactionCategories.Income.value
         expenses = queryset.filter(category=income)
         return expenses

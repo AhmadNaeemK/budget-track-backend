@@ -16,4 +16,5 @@ urlpatterns = [
     path('splitTransactionList/', views.SplitTransactionListView.as_view(), name='split_transaction_list'),
     path('splitTransaction/<int:pk>', views.SplitTransactionView.as_view(), name='split_transaction'),
     path('paySplit/', views.PaySplit.as_view(), name='pay_split'),
+    path('transactionsInSplit', views.TransactionsWithSplit.as_view(), name='transactions_with_split')
 ]

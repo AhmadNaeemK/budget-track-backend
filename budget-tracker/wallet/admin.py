@@ -19,17 +19,15 @@ class CashAccountsAdmin(admin.ModelAdmin):
 
 
 class TransactionAdmin(admin.ModelAdmin):
-    list_display = ('title', 'user', 'category', 'transaction_time', 'amount', 'scheduled')
+    list_display = ('title', 'user', 'category', 'transaction_time', 'amount', 'scheduled', 'split_expense')
 
 
 class SplitTransactionAdmin(admin.ModelAdmin):
-    list_display = ('title', 'creator', 'category', 'paying_friend', 'get_friends_in_split', 'get_paid_friends')
+    list_display = ('title', 'creator', 'category', 'paying_friend', 'get_friends_in_split')
 
     def get_friends_in_split(self, obj):
         return "\n".join([user.username for user in obj.get_all_friends_involved()])
 
-    def get_paid_friends(self, obj):
-        return "\n".join([user.username for user in obj.get_friends_paid()])
 
 
 admin.site.register(CashAccount, CashAccountsAdmin)
