@@ -12,7 +12,8 @@ from .serializers import SplitTransactionSerializer
 
 from .filters import TransactionFilterBackend, ScheduledTransactionFilterBackend, ExpenseFilterBackend
 from .filters import IncomeFilterBackend
-from accounts.filters import UserFilterBackend
+
+from datetime import datetime
 
 
 class StandardPagination(pagination.PageNumberPagination):
@@ -131,6 +132,34 @@ class ExpenseCategoryDataView(APIView):
                                    for choice in TransactionCategories.choices if
                                    get_total_expenses(choice[0], account) > 0
                                    and choice[1] != 'Income']
+        return Response(data)
+
+
+class MonthlyTransactionDataView(APIView):
+    def get(self, request):
+        def get_total_of_transactions(transactions):
+            return sum([transaction.amount for transaction in transactions])
+
+        def get_month_data(month):
+            expenses = Transaction.objects.filter(user=request.user.id, transaction_time__month=month,
+                                                  transaction_time__year=datetime.now().year
+                                                  )
+            expenses = expenses.exclude(category=TransactionCategories.Income.value)
+            incomes = Transaction.objects.filter(user=request.user.id, category=TransactionCategories.Income.value,
+                                                 transaction_time__month=month,
+                                                 transaction_time__year=datetime.now().year)
+            return get_total_of_transactions(incomes), get_total_of_transactions(expenses)
+
+        data = {
+            'income': [],
+            'expense': []
+        }
+
+        for month in range(1, 13):
+            month_data = get_month_data(month)
+            data['income'].append(month_data[0])
+            data['expense'].append(month_data[1])
+
         return Response(data)
 
 
