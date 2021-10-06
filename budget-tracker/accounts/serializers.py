@@ -48,6 +48,8 @@ class FriendRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = FriendRequest
         fields = '__all__'
+    user = UserSerializer(read_only=True)
+    receiver = UserSerializer(read_only=True)
 
     def validate(self, data):
 
@@ -59,8 +61,9 @@ class FriendRequestSerializer(serializers.ModelSerializer):
 
         return data
 
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        data['user'] = User.objects.get(pk=data['user']).username
-        data['receiver'] = User.objects.get(pk=data['receiver']).username
-        return data
+    def create(self, validated_data):
+        validated_data['user'] = User.objects.get(pk=self.initial_data.get('user'))
+        validated_data['receiver'] = User.objects.get(pk=self.initial_data.get('receiver'))
+        request = FriendRequest.objects.create(**validated_data)
+        return request
+
