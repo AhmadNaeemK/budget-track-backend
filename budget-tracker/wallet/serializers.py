@@ -65,7 +65,8 @@ class TransactionSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data['cash_account'] = CashAccount.objects.get(pk=self.initial_data.get('cash_account'))
         validated_data['user'] = EmailAuthenticatedUser.objects.get(pk=self.initial_data.get('user'))
-        validated_data['split_expense'] = SplitTransaction.objects.get(pk=self.initial_data.get('split_expense'))
+        if self.initial_data.get('split_expense'):
+            validated_data['split_expense'] = SplitTransaction.objects.get(pk=self.initial_data.get('split_expense'))
         transaction = Transaction.objects.create(**validated_data)
         return transaction
 
@@ -78,7 +79,7 @@ class TransactionSerializer(serializers.ModelSerializer):
                 return getattr(self.instance, attr_name)
             return None
 
-        cash_account = CashAccount.objects.get(pk=self.initial_data.get('cash_account'))
+        cash_account = get_from_request_or_instance('cash_account') or CashAccount.objects.get(pk=self.initial_data.get('cash_account'))
         amount = get_from_request_or_instance('amount')
         category = get_from_request_or_instance('category')
         if (category != TransactionCategories.Income.value and cash_account.limit != 0 and

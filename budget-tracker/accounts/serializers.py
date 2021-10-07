@@ -53,10 +53,12 @@ class FriendRequestSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
 
-        if data['user'] == data['receiver']:
+        user = User.objects.get(pk=self.initial_data.get('user'))
+        receiver = User.objects.get(pk=self.initial_data.get('receiver'))
+        if user == receiver:
             raise serializers.ValidationError("Request Sender and Receiver cannot be same")
 
-        if data['receiver'] in data['user'].friends.all():
+        if receiver in user.friends.all():
             raise serializers.ValidationError("Already Friends")
 
         return data
