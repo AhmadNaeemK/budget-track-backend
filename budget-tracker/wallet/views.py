@@ -197,6 +197,10 @@ class SplitTransactionListView(generics.ListCreateAPIView):
                                                                      })
         if payment_transaction_serializer.is_valid():
             ExpenseListView.perform_create(ExpenseListView, payment_transaction_serializer)
+        else:
+            SplitTransaction.objects.get(pk=split.id).delete()
+            raise serializers.ValidationError(payment_transaction_serializer)
+
 
 
 class SplitTransactionView(generics.RetrieveDestroyAPIView):
@@ -241,11 +245,10 @@ class PaySplit(APIView):
         if payment_transaction_serializer.is_valid() and receiving_transaction_serializer.is_valid():
             ExpenseListView.perform_create(ExpenseListView, payment_transaction_serializer)
             IncomeListView.perform_create(IncomeListView, receiving_transaction_serializer)
-
-            return Response("Payment Successful")
+            return Response('Payment Successful')
 
         else:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response(payment_transaction_serializer.errors)
 
 
 class TransactionsWithSplit(generics.ListAPIView):
@@ -259,28 +262,15 @@ class SplitPaymentData(APIView):
 
     def get(self, request, pk):
         split = SplitTransaction.objects.get(pk=pk)
-        required_payment = split.total_amount // len(split.all_friends_involved.all())
-        rel_transactions = Transaction.objects.filter(user=request.user.id, split_expense=split).exclude(
-            category=TransactionCategories.Income.value)
-        paid_amount = sum([transaction.amount for transaction in rel_transactions])
-        return Response({'required': required_payment - paid_amount, 'paid': paid_amount})
+        payable, required, paid = SplitTransactionSerializer.get_payable_amount(SplitTransactionSerializer,
+                                                                                user_id=request.user.id, split=split)
+        return Response({'required': payable, 'paid': paid})
 
 
 class MaximumSplitsDue(generics.ListAPIView):
     serializer_class = MaxSplitsDueSerializer
 
     def get_queryset(self):
-        def get_payable_amount(split):
-            required_payment = split.total_amount // len(split.all_friends_involved.all())
-            rel_transactions = Transaction.objects.filter(user=self.request.user.id, split_expense=split).exclude(
-                category=TransactionCategories.Income.value)
-            paid_amount = sum([transaction.amount for transaction in rel_transactions])
-            payable = required_payment - paid_amount
-            if payable < 0:
-                return 0
-            else:
-                return payable
-
         splits = SplitTransaction.objects.filter(
             Q(creator=self.request.user.id) | Q(paying_friend=self.request.user.id) |
             Q(all_friends_involved__id=self.request.user.id)
@@ -289,7 +279,11 @@ class MaximumSplitsDue(generics.ListAPIView):
         def take_second(elem):
             return elem['payable_amount']
 
-        payable_splits = [{'split': split, 'payable_amount': get_payable_amount(split)} for split in splits]
+        payable_splits = [{'split': split,
+                           'payable_amount': SplitTransactionSerializer.get_payable_amount(SplitTransactionSerializer,
+                                                                                           user_id=self.request.user.id,
+                                                                                           split=split)[0]}
+                          for split in splits]
         payable_splits.sort(reverse=True, key=take_second)
 
         return payable_splits[:5]
