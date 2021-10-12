@@ -199,8 +199,7 @@ class SplitTransactionListView(generics.ListCreateAPIView):
             ExpenseListView.perform_create(ExpenseListView, payment_transaction_serializer)
         else:
             SplitTransaction.objects.get(pk=split.id).delete()
-            raise serializers.ValidationError(payment_transaction_serializer)
-
+            raise serializers.ValidationError(payment_transaction_serializer.errors)
 
 
 class SplitTransactionView(generics.RetrieveDestroyAPIView):
