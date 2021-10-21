@@ -2,7 +2,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework import permissions
-from rest_framework import generics, pagination, status
+from rest_framework import generics, status
 
 from django.db.models import Q
 
@@ -16,28 +16,23 @@ from .serializers import UserSerializer, RegistrationSerializer, MyTokenObtainPa
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 
-class UserPagination(pagination.PageNumberPagination):
-    page_size = 5
-    page_size_query_param = 'page_size'
-    max_page_size = 50
-
-
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
 
 
 class UserList(generics.ListAPIView):
-
     serializer_class = UserSerializer
-    pagination_class = UserPagination
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['username']
 
     def get_queryset(self):
         users = User.objects.exclude(id=self.request.user.id)
-        friend_request_list = [req.receiver.id for req in FriendRequest.objects.filter(user=self.request.user.id)]
-        friends_list = [friend.id for friend in User.objects.get(pk= self.request.user.id).friends.all()]
-        unsent_request_users = users.exclude(Q(id__in=friend_request_list + friends_list))
+        sent_friend_request_list = [req.receiver.id for req in FriendRequest.objects.filter(user=self.request.user.id)]
+        received_friend_request_list = [req.user.id for req in
+                                        FriendRequest.objects.filter(receiver=self.request.user.id)]
+        friends_list = [friend.id for friend in User.objects.get(pk=self.request.user.id).friends.all()]
+        unsent_request_users = users.exclude(
+            Q(id__in=sent_friend_request_list + received_friend_request_list + friends_list))
         return unsent_request_users.order_by('username')
 
 
@@ -63,13 +58,13 @@ class LogoutUser(APIView):
 
 
 class SentFriendRequestListView(generics.ListCreateAPIView):
-    queryset = FriendRequest.objects.all()
+    queryset = FriendRequest.objects.all().order_by('request_time')
     filter_backends = [UserFilterBackend]
     serializer_class = FriendRequestSerializer
 
 
 class ReceivedFriendRequestListView(generics.ListAPIView):
-    queryset = FriendRequest.objects.all()
+    queryset = FriendRequest.objects.all().order_by('request_time')
     filter_backends = [ReceiverFilterBackend]
     serializer_class = FriendRequestSerializer
 
@@ -107,7 +102,6 @@ class RemoveFriendView(APIView):
 
 class FriendsListView(generics.ListAPIView):
     serializer_class = UserSerializer
-    pagination_class = UserPagination
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['username']
 

@@ -1,4 +1,4 @@
-from .models import Transaction
+from .models import Transaction, TransactionCategories
 
 import datetime
 from django.conf import settings
@@ -15,7 +15,7 @@ def update_transactions():
         if scheduled.transaction_time <= datetime.datetime.now(tz=curr_time_zone):
             scheduled.scheduled = False
             cash_account = scheduled.cash_account
-            if (scheduled.category == Transaction.Categories.choices[0][0]):
+            if scheduled.category == TransactionCategories.Income.value:
                 cash_account.balance += scheduled.amount
             else:
                 cash_account.balance -= scheduled.amount

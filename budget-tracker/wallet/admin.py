@@ -19,7 +19,8 @@ class CashAccountsAdmin(admin.ModelAdmin):
 
 
 class TransactionAdmin(admin.ModelAdmin):
-    list_display = ('title', 'user', 'category', 'transaction_time', 'amount', 'scheduled', 'split_expense')
+    list_display = ('title', 'user', 'cash_account', 'category', 'transaction_time', 'amount', 'scheduled',
+                    'split_expense')
 
 
 class SplitTransactionAdmin(admin.ModelAdmin):

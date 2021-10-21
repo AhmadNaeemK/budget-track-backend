@@ -15,6 +15,10 @@ urlpatterns = [
     path('scheduledTransaction/<int:pk>', views.ScheduledTransactionView.as_view(), name='scheduled_transaction'),
     path('splitTransactionList/', views.SplitTransactionListView.as_view(), name='split_transaction_list'),
     path('splitTransaction/<int:pk>', views.SplitTransactionView.as_view(), name='split_transaction'),
+    path('splitPaymentData/<int:pk>', views.SplitPaymentData.as_view(), name='split_payment_data'),
     path('paySplit/', views.PaySplit.as_view(), name='pay_split'),
-    path('transactionsInSplit', views.TransactionsWithSplit.as_view(), name='transactions_with_split')
+    path('splitsDueMax', views.MaximumSplitsDue.as_view(), name='splits_due'),
+    path('transactionsInSplit/', views.TransactionsWithSplit.as_view(), name='transactions_with_split'),
+    path('monthlyTransactionChartData/', views.MonthlyTransactionDataView.as_view(),
+         name='monthly_transaction_chart_data'),
 ]
