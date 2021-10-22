@@ -14,6 +14,8 @@ from pathlib import Path
 from datetime import timedelta
 import os
 
+from twilio.rest import Client
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -199,3 +201,9 @@ EMAIL_HOST_USER = 'apikey' # this is exactly the value 'apikey'
 EMAIL_HOST_PASSWORD = SENDGRID_API_KEY
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
+
+#twilio sms API
+TWILIO_ACCOUNT_SID = 'ACcb880cd350dbc3072578eba152257cb1'
+TWILIO_AUTH_TOKEN = 'f9c733f802fde8e93125c0fa653e244f'
+PHN_NUM = '+12512741405'
+TWILIO_CLIENT = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)

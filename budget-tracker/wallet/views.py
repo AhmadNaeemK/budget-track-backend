@@ -18,20 +18,7 @@ from .filters import IncomeFilterBackend
 
 from datetime import datetime
 
-
-def send_mail_report(recipient_emails, subject, html_message, message):
-    try:
-        send_mail(subject=subject,
-                  message=message,
-                  html_message=html_message,
-                  from_email=settings.SENDER_EMAIL,
-                  recipient_list=recipient_emails,
-                  fail_silently=False)
-        print('mail sent')
-    except Exception as e:
-        print("Error: ", e)
-        return
-    return
+from .notifications import send_mail_report, send_sms_notification
 
 
 class ExpenseListView(generics.ListCreateAPIView):
@@ -228,6 +215,20 @@ class SplitTransactionListView(generics.ListCreateAPIView):
                              html_message=html_message,
                              message=payment_transaction_title,
                              )
+
+            message = 'You have been added to a split expense for {title} by {creator}.\n' + \
+                      '\n Amount Paid by {paying_friend}: {total_amount}' \
+                      '\n From BudgetTracker'
+        for friend in split.all_friends_involved.all():
+            send_sms_notification(recipient_phn=friend.phone_number,
+                                  message_body=message.format(
+                                      title=split.title,
+                                      creator=split.creator.username,
+                                      paying_friend=split.paying_friend.username,
+                                      total_amount=split.total_amount
+                                  )
+                                  )
+
         else:
             SplitTransaction.objects.get(pk=split.id).delete()
             raise serializers.ValidationError(payment_transaction_serializer.errors)
@@ -291,6 +292,13 @@ class PaySplit(APIView):
                              html_message=html_message,
                              message=receiving_transaction_title,
                              )
+            message = 'Payment {payment} for {title} made by {user}, added to your cash account \nFrom BudgetTracker'
+            send_sms_notification(recipient_phn=split.paying_friend.phone_number,
+                                  message_body=message.format(payment=request.data.get('amount'),
+                                                              title=split.title,
+                                                              user=user.username,
+                                                              )
+                                  )
             return Response('Payment Successful')
 
         else:
@@ -333,4 +341,3 @@ class MaximumSplitsDue(generics.ListAPIView):
         payable_splits.sort(reverse=True, key=take_second)
 
         return payable_splits[:5]
-

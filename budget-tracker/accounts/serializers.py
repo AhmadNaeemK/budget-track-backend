@@ -8,18 +8,22 @@ from wallet.models import CashAccount
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'email']
+        fields = ['id', 'username', 'email', 'phone_number']
 
 
 class RegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'password')
-        extra_kwargs = {'password': {'write_only': True}, 'username': {'required': True, 'allow_blank': False}}
+        fields = ('id', 'username', 'email', 'password', 'phone_number')
+        extra_kwargs = {'password': {'write_only': True}, 'username': {'required': True, 'allow_blank': False},
+                        'phone_number': {'required': True}
+                        }
 
     def create(self, validated_data):
         user = User.objects.create_user(
-            validated_data['username'], validated_data['email'], validated_data['password'])
+            validated_data['username'], validated_data['email'], validated_data['password'],)
+        user.phone_number = validated_data['phone_number']
+        user.save()
         cashAccount = CashAccount.objects.create(title='Cash', user=user)
         return user
 

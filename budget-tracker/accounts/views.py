@@ -79,9 +79,14 @@ class SentFriendRequestListView(generics.ListCreateAPIView):
                 html_message=html_message,
                 message='Friend Request received from ' + friend_request.user.username
             )
-            print('Mail Sent')
+            settings.TWILIO_CLIENT.messages.create(
+                body="Friend request received from " + friend_request.user.username,
+                from_=settings.PHN_NUM,
+                to=friend_request.receiver.phone_number
+            )
+            print('Notification Sent')
         except Exception as e:
-            print('Mail not sent: ', e)
+            print('Notification not sent: ', e)
 
 
 class ReceivedFriendRequestListView(generics.ListAPIView):
