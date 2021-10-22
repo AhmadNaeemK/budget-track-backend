@@ -3,9 +3,6 @@ from rest_framework.response import Response
 from rest_framework import generics, filters, serializers
 
 from django.db.models import Q
-from django.core.mail import send_mail
-from django.template.loader import render_to_string
-from django.conf import settings
 
 from .models import Transaction, CashAccount, SplitTransaction, TransactionCategories
 from accounts.models import EmailAuthenticatedUser as User
@@ -18,8 +15,8 @@ from .filters import IncomeFilterBackend
 
 from datetime import datetime
 
-from .notifications import send_mail_report, send_sms_notification
-
+from .services import send_split_expense_payment_report_sms, send_split_expense_payment_report_mail
+from .services import send_split_include_notification_mail, send_split_include_notification_sms
 
 class ExpenseListView(generics.ListCreateAPIView):
     queryset = Transaction.objects.all()
@@ -202,32 +199,8 @@ class SplitTransactionListView(generics.ListCreateAPIView):
                                                                      })
         if payment_transaction_serializer.is_valid():
             ExpenseListView.perform_create(ExpenseListView, payment_transaction_serializer)
-            html_message = render_to_string('emails/splitIncludeNotificationTemplate.html',
-                                            {
-                                                'title': split.title,
-                                                'category': TransactionCategories.choices[split.category][1],
-                                                'total_amount': split.total_amount,
-                                                'paying_friend': split.paying_friend.username
-                                            }
-                                            )
-            send_mail_report(split.all_friends_involved.all(),
-                             subject=payment_transaction_title,
-                             html_message=html_message,
-                             message=payment_transaction_title,
-                             )
-
-            message = 'You have been added to a split expense for {title} by {creator}.\n' + \
-                      '\n Amount Paid by {paying_friend}: {total_amount}' \
-                      '\n From BudgetTracker'
-        for friend in split.all_friends_involved.all():
-            send_sms_notification(recipient_phn=friend.phone_number,
-                                  message_body=message.format(
-                                      title=split.title,
-                                      creator=split.creator.username,
-                                      paying_friend=split.paying_friend.username,
-                                      total_amount=split.total_amount
-                                  )
-                                  )
+            send_split_include_notification_mail(split)
+            send_split_include_notification_sms(split)
 
         else:
             SplitTransaction.objects.get(pk=split.id).delete()
@@ -276,29 +249,10 @@ class PaySplit(APIView):
         if payment_transaction_serializer.is_valid() and receiving_transaction_serializer.is_valid():
             ExpenseListView.perform_create(ExpenseListView, payment_transaction_serializer)
             IncomeListView.perform_create(IncomeListView, receiving_transaction_serializer)
-            html_message = render_to_string('emails/splitPaymentReportTemplate.html',
-                                            {
-                                                'title': split.title,
-                                                'category': TransactionCategories.choices[split.category][1],
-                                                'total_split': split_payment,
-                                                'payment': request.data.get('amount'),
-                                                'rem_payment': (
-                                                        split_payment - paid_amount - int(request.data.get('amount'))
-                                                ),
-                                            }
-                                            )
-            send_mail_report([split.paying_friend.email],
-                             subject=receiving_transaction_title,
-                             html_message=html_message,
-                             message=receiving_transaction_title,
-                             )
-            message = 'Payment {payment} for {title} made by {user}, added to your cash account \nFrom BudgetTracker'
-            send_sms_notification(recipient_phn=split.paying_friend.phone_number,
-                                  message_body=message.format(payment=request.data.get('amount'),
-                                                              title=split.title,
-                                                              user=user.username,
-                                                              )
-                                  )
+
+            send_split_expense_payment_report_mail(split, user, split_payment, paid_amount,
+                                                   int(request.data.get('amount')))
+            send_split_expense_payment_report_sms(split, user, request.data.get('amount'))
             return Response('Payment Successful')
 
         else:

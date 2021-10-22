@@ -1,13 +1,10 @@
 from rest_framework.response import Response
-from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework import permissions
 from rest_framework import generics, status
 
 from django.db.models import Q
-from django.core.mail import send_mail
 from django.template.loader import render_to_string
-from django.conf import settings
 
 from .models import EmailAuthenticatedUser as User, FriendRequest
 
@@ -15,6 +12,8 @@ from rest_framework import filters
 
 from .filters import UserFilterBackend, ReceiverFilterBackend
 from .serializers import UserSerializer, RegistrationSerializer, MyTokenObtainPairSerializer, FriendRequestSerializer
+
+from .services import send_friend_request_sms, send_friend_request_email
 
 from rest_framework_simplejwt.views import TokenObtainPairView
 
@@ -67,26 +66,8 @@ class SentFriendRequestListView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         friend_request = serializer.save()
-        html_message = render_to_string('emails/friendRequestNotificationTemplate.html',
-                                        {'sender': friend_request.user.username}
-                                        )
-        try:
-            send_mail(
-                subject="Friend Request Received",
-                from_email=settings.SENDER_EMAIL,
-                recipient_list=[friend_request.receiver.email],
-                fail_silently=False,
-                html_message=html_message,
-                message='Friend Request received from ' + friend_request.user.username
-            )
-            settings.TWILIO_CLIENT.messages.create(
-                body="Friend request received from " + friend_request.user.username,
-                from_=settings.PHN_NUM,
-                to=friend_request.receiver.phone_number
-            )
-            print('Notification Sent')
-        except Exception as e:
-            print('Notification not sent: ', e)
+        send_friend_request_sms(friend_request)
+        send_friend_request_email(friend_request)
 
 
 class ReceivedFriendRequestListView(generics.ListAPIView):
