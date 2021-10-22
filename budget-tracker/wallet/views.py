@@ -1,8 +1,11 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import generics, filters, status, serializers
+from rest_framework import generics, filters, serializers
 
 from django.db.models import Q
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.conf import settings
 
 from .models import Transaction, CashAccount, SplitTransaction, TransactionCategories
 from accounts.models import EmailAuthenticatedUser as User
@@ -14,6 +17,21 @@ from .filters import TransactionFilterBackend, ScheduledTransactionFilterBackend
 from .filters import IncomeFilterBackend
 
 from datetime import datetime
+
+
+def send_mail_report(recipient_emails, subject, html_message, message):
+    try:
+        send_mail(subject=subject,
+                  message=message,
+                  html_message=html_message,
+                  from_email=settings.SENDER_EMAIL,
+                  recipient_list=recipient_emails,
+                  fail_silently=False)
+        print('mail sent')
+    except Exception as e:
+        print("Error: ", e)
+        return
+    return
 
 
 class ExpenseListView(generics.ListCreateAPIView):
@@ -197,6 +215,19 @@ class SplitTransactionListView(generics.ListCreateAPIView):
                                                                      })
         if payment_transaction_serializer.is_valid():
             ExpenseListView.perform_create(ExpenseListView, payment_transaction_serializer)
+            html_message = render_to_string('emails/splitIncludeNotificationTemplate.html',
+                                            {
+                                                'title': split.title,
+                                                'category': TransactionCategories.choices[split.category][1],
+                                                'total_amount': split.total_amount,
+                                                'paying_friend': split.paying_friend.username
+                                            }
+                                            )
+            send_mail_report(split.all_friends_involved.all(),
+                             subject=payment_transaction_title,
+                             html_message=html_message,
+                             message=payment_transaction_title,
+                             )
         else:
             SplitTransaction.objects.get(pk=split.id).delete()
             raise serializers.ValidationError(payment_transaction_serializer.errors)
@@ -244,6 +275,22 @@ class PaySplit(APIView):
         if payment_transaction_serializer.is_valid() and receiving_transaction_serializer.is_valid():
             ExpenseListView.perform_create(ExpenseListView, payment_transaction_serializer)
             IncomeListView.perform_create(IncomeListView, receiving_transaction_serializer)
+            html_message = render_to_string('emails/splitPaymentReportTemplate.html',
+                                            {
+                                                'title': split.title,
+                                                'category': TransactionCategories.choices[split.category][1],
+                                                'total_split': split_payment,
+                                                'payment': request.data.get('amount'),
+                                                'rem_payment': (
+                                                        split_payment - paid_amount - int(request.data.get('amount'))
+                                                ),
+                                            }
+                                            )
+            send_mail_report([split.paying_friend.email],
+                             subject=receiving_transaction_title,
+                             html_message=html_message,
+                             message=receiving_transaction_title,
+                             )
             return Response('Payment Successful')
 
         else:
@@ -286,3 +333,4 @@ class MaximumSplitsDue(generics.ListAPIView):
         payable_splits.sort(reverse=True, key=take_second)
 
         return payable_splits[:5]
+

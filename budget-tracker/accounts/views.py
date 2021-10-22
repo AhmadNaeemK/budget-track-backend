@@ -5,12 +5,15 @@ from rest_framework import permissions
 from rest_framework import generics, status
 
 from django.db.models import Q
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.conf import settings
 
 from .models import EmailAuthenticatedUser as User, FriendRequest
 
 from rest_framework import filters
-from .filters import UserFilterBackend, ReceiverFilterBackend
 
+from .filters import UserFilterBackend, ReceiverFilterBackend
 from .serializers import UserSerializer, RegistrationSerializer, MyTokenObtainPairSerializer, FriendRequestSerializer
 
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -61,6 +64,24 @@ class SentFriendRequestListView(generics.ListCreateAPIView):
     queryset = FriendRequest.objects.all().order_by('request_time')
     filter_backends = [UserFilterBackend]
     serializer_class = FriendRequestSerializer
+
+    def perform_create(self, serializer):
+        friend_request = serializer.save()
+        html_message = render_to_string('emails/friendRequestNotificationTemplate.html',
+                                        {'sender': friend_request.user.username}
+                                        )
+        try:
+            send_mail(
+                subject="Friend Request Received",
+                from_email=settings.SENDER_EMAIL,
+                recipient_list=[friend_request.receiver.email],
+                fail_silently=False,
+                html_message=html_message,
+                message='Friend Request received from ' + friend_request.user.username
+            )
+            print('Mail Sent')
+        except Exception as e:
+            print('Mail not sent: ', e)
 
 
 class ReceivedFriendRequestListView(generics.ListAPIView):
