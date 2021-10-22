@@ -1,0 +1,25 @@
+{% extends 'baseMailTemplate.html' %}
+
+{% block content %}
+<div>
+    <p>Split payment made by {{user}}</p>
+</div>
+<div class="inner-container">
+    <table>
+        <tr>
+            <th>Title</th>
+            <th>Category</th>
+            <th>Amount Paid</th>
+            <th>Remaining Amount</th>
+            <th>Total Amount</th>
+        </tr>
+        <tr>
+            <td>{{ title }}</td>
+            <td>{{ category }}</td>
+            <td>{{ payment }}</td>
+            <td>{{ rem_payment }}</td>
+            <td>{{ total_split }}</td>
+        </tr>
+    </table>
+</div>
+{% endblock content %}

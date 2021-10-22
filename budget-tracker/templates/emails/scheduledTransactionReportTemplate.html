@@ -1,0 +1,23 @@
+{% extends 'baseMailTemplate.html' %}
+
+{% block content %}
+<div>
+    <p>Scheduled Transaction {{status}}</p>
+</div>
+<div class="inner-container">
+    <table>
+        <tr>
+            <th>Title</th>
+            <th>Category</th>
+            <th>Amount</th>
+            <th>Remaining Balance</th>
+        </tr>
+        <tr>
+            <td>{{ title }}</td>
+            <td>{{ category }}</td>
+            <td>{{ amount }}</td>
+            <td>{{ remaining }}</td>
+        </tr>
+    </table>
+</div>
+{% endblock content %}
