@@ -24,7 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-!eg@_0o1y9jg2$y0mb^*+8tq=0z9p52@b_c27voq*ub*it=x*f'
+SECRET_KEY = os.environ['SECRET_KEY']
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -194,8 +194,8 @@ SIMPLE_JWT = {
 }
 
 #send grid api
-SENDER_EMAIL = 'mankhokhar1@gmail.com'
-SENDGRID_API_KEY = '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'
+SENDER_EMAIL = os.environ['SENDER_EMAIL']
+SENDGRID_API_KEY = os.environ['SENDGRID_API_KEY']
 EMAIL_HOST = 'smtp.sendgrid.net'
 EMAIL_HOST_USER = 'apikey' # this is exactly the value 'apikey'
 EMAIL_HOST_PASSWORD = SENDGRID_API_KEY
@@ -203,7 +203,8 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 
 #twilio sms API
-TWILIO_ACCOUNT_SID = 'ACcb880cd350dbc3072578eba152257cb1'
-TWILIO_AUTH_TOKEN = 'f9c733f802fde8e93125c0fa653e244f'
-PHN_NUM = '+12512741405'
+TWILIO_ACCOUNT_SID = os.environ['TWILIO_ACCOUNT_SID']
+TWILIO_AUTH_TOKEN = os.environ['TWILIO_AUTH_TOKEN']
+PHN_NUM = os.environ['TWILIO_PHN_NUM']
 TWILIO_CLIENT = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+
