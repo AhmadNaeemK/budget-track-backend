@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     'rest_framework_simplejwt',
+    'channels',
     #my apps
     'wallet.apps.WalletConfig',
     'accounts.apps.AccountsConfig',
@@ -81,7 +82,15 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'budget-tracker.wsgi.application'
-
+ASGI_APPLICATION = "budget-tracker.asgi.application"
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('127.0.0.1', 6379)],
+        },
+    },
+}
 
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases

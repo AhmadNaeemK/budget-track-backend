@@ -5,6 +5,7 @@ from django.template.loader import render_to_string
 from .models import TransactionCategories
 
 
+
 def send_scheduled_transaction_report_mail(transaction, status):
     html = render_to_string('emails/scheduledTransactionReportTemplate.html',
                             {
