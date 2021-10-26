@@ -12,6 +12,8 @@ apscheduler = "*"
 twilio = "*"
 channels = "*"
 channels-redis = "*"
+celery = "*"
+redis = "*"
 
 [dev-packages]
 
