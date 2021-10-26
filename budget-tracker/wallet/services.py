@@ -2,10 +2,22 @@ from django.conf import settings
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 
-from .models import TransactionCategories
-
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
+
+from .models import TransactionCategories, Transaction
+from accounts.models import EmailAuthenticatedUser as User
+
+from.serializers import TransactionSerializer
+
+import datetime
+import pytz
+
+
+def get_tz_aware_current_time():
+    curr_time_zone = pytz.timezone(settings.TIME_ZONE)
+    curr_time = datetime.datetime.now(tz=curr_time_zone)  # timezone aware current time
+    return curr_time
 
 
 def send_scheduled_transaction_report_mail(transaction, status):
@@ -150,3 +162,30 @@ def send_split_include_push_notification(split):
             )
         except Exception as e:
             print(e)
+
+
+def send_daily_scheduled_transactions_email_reports():
+    """
+        send email report for transactions due for the day
+    """
+    curr_time = get_tz_aware_current_time()
+    curr_date = curr_time.date()
+    users = User.objects.all()
+    for user in users:
+        scheduled_transactions = Transaction.objects.filter(user=user,
+                                                            scheduled=True,
+                                                            transaction_time__date__lte=curr_date)[:10]
+        if scheduled_transactions:
+            scheduled_transactions = TransactionSerializer(scheduled_transactions, many=True)
+            html_message = render_to_string('emails/scheduledTransactionsTodayTemplate.html',
+                                            {
+                                                'scheduled_transactions': scheduled_transactions.data
+                                            }
+                                            )
+            title = f"Transactions Scheduled for Today {curr_date}"
+            send_mail(subject=title,
+                      message=title,
+                      html_message=html_message,
+                      recipient_list=[user.email],
+                      from_email=settings.SENDER_EMAIL
+                      )

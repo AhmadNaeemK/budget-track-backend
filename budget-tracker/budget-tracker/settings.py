@@ -202,18 +202,22 @@ SIMPLE_JWT = {
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
 }
 
-#send grid api
+# send grid api
 SENDER_EMAIL = os.environ['SENDER_EMAIL']
 SENDGRID_API_KEY = os.environ['SENDGRID_API_KEY']
 EMAIL_HOST = 'smtp.sendgrid.net'
-EMAIL_HOST_USER = 'apikey' # this is exactly the value 'apikey'
+EMAIL_HOST_USER = 'apikey'
 EMAIL_HOST_PASSWORD = SENDGRID_API_KEY
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 
-#twilio sms API
+# twilio sms API
 TWILIO_ACCOUNT_SID = os.environ['TWILIO_ACCOUNT_SID']
 TWILIO_AUTH_TOKEN = os.environ['TWILIO_AUTH_TOKEN']
 PHN_NUM = os.environ['TWILIO_PHN_NUM']
 TWILIO_CLIENT = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+
+# Celery
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
 

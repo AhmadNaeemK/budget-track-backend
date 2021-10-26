@@ -1,0 +1,21 @@
+{% extends 'baseMailTemplate.html' %}
+
+{% block content %}
+<div>
+    <p>Following transactions will be completed today</p>
+    <table>
+        <tr>
+            <th>Title</th>
+            <th>Category</th>
+            <th>Amount</th>
+        </tr>
+        {% for transaction in scheduled_transactions %}
+        <tr>
+            <td>{{ transaction.title }}</td>
+            <td>{{ transaction.category.1 }}</td>
+            <td>{{ transaction.amount }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock content %}

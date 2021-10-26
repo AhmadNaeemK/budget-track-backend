@@ -65,7 +65,6 @@ class SplitTransactionSerializer(serializers.ModelSerializer):
         return data
 
 
-
 class TransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Transaction
