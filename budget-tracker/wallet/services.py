@@ -4,6 +4,8 @@ from django.template.loader import render_to_string
 
 from .models import TransactionCategories
 
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 
 def send_scheduled_transaction_report_mail(transaction, status):
@@ -30,13 +32,16 @@ def send_scheduled_transaction_report_sms(transaction, status):
               '\nTransaction Amount: {amount}' \
               '\nFrom BudgetTracker'
 
-    settings.TWILIO_CLIENT.messages.create(
-        body=message.format(title=transaction.title,
-                            status=status,
-                            amount=transaction.amount),
-        from_=settings.PHN_NUM,
-        to=transaction.user.phone_number
-    )
+    try:
+        settings.TWILIO_CLIENT.messages.create(
+            body=message.format(title=transaction.title,
+                                status=status,
+                                amount=transaction.amount),
+            from_=settings.PHN_NUM,
+            to=transaction.user.phone_number
+        )
+    except Exception as e:
+        print(e)
 
 
 def send_split_expense_payment_report_mail(split, user, split_payment, paid_amount, payment):
@@ -63,16 +68,34 @@ def send_split_expense_payment_report_mail(split, user, split_payment, paid_amou
 
 
 def send_split_expense_payment_report_sms(split, user, payment):
-    message = 'Payment {payment} for {title} made by {user}, added to your cash account' \
+    message = 'Payment amount {payment} for {title} made by {user}, added to your cash account' \
               '\nFrom BudgetTracker'
+    try:
+        settings.TWILIO_CLIENT.messages.create(
+            body=message.format(title=split.title,
+                                user=user.username,
+                                payment=payment),
+            from_=settings.PHN_NUM,
+            to=split.paying_friend.phone_number
+        )
+    except Exception as e:
+        print(e)
 
-    settings.TWILIO_CLIENT.messages.create(
-        body=message.format(title=split.title,
-                            user=user.username,
-                            payment=payment.amount),
-        from_=settings.PHN_NUM,
-        to=split.paying_friend.phone_number
-    )
+
+def send_split_expense_payment_push_notification(split, user, payment):
+    message = f'Payment amount {payment} for {split.title} made by {user.username}, added to your cash account'
+    group_name = 'notification_%s' % str(split.paying_friend.id)
+    channel_layer = get_channel_layer()
+    try:
+        async_to_sync(channel_layer.group_send)(
+            group_name,
+            {
+                "type": "send_notification",
+                "notification": message,
+            },
+        )
+    except Exception as e:
+        print(e)
 
 
 def send_split_include_notification_mail(split):
@@ -95,15 +118,35 @@ def send_split_include_notification_mail(split):
 
 
 def send_split_include_notification_sms(split):
-    message = 'You have been added to a split expense for {title} by {creator}.\n' \
-              '\n Amount Paid by {paying_friend}: {total_amount}' \
-              '\n From BudgetTracker'
+    message = 'You have been added to a split expense for {title} by {creator}.' \
+              '\nAmount Paid by {paying_friend}: {total_amount}' \
+              '\nFrom BudgetTracker'
     for friend in split.all_friends_involved.all():
-        settings.TWILIO_CLIENT.messages.create(
-            body=message.format(title=split.title,
-                                creator=split.creator.username,
-                                paying_friend=split.paying_friend.username,
-                                total_amount=split.total_amount),
-            from_=settings.PHN_NUM,
-            to=friend.phone_number
-        )
+        try:
+            settings.TWILIO_CLIENT.messages.create(
+                body=message.format(title=split.title,
+                                    creator=split.creator.username,
+                                    paying_friend=split.paying_friend.username,
+                                    total_amount=split.total_amount),
+                from_=settings.PHN_NUM,
+                to=friend.phone_number
+            )
+        except Exception as e:
+            print(e)
+
+
+def send_split_include_push_notification(split):
+    channel_layer = get_channel_layer()
+    for friend in split.all_friends_involved.all():
+        group_name = 'notification_%s' % str(friend.id)
+        try:
+            message = f'You have been added to split {split.title} by {split.creator.username}'
+            async_to_sync(channel_layer.group_send)(
+                group_name,
+                {
+                    "type": "send_notification",
+                    "notification": message,
+                },
+            )
+        except Exception as e:
+            print(e)

@@ -66,8 +66,8 @@ class SentFriendRequestListView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         friend_request = serializer.save()
-        # send_friend_request_sms(friend_request)
-        # send_friend_request_email(friend_request)
+        send_friend_request_sms(friend_request)
+        send_friend_request_email(friend_request)
         send_friend_request_notification(friend_request)
 
 
