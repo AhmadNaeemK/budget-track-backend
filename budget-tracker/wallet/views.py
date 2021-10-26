@@ -17,6 +17,8 @@ from datetime import datetime
 
 from .services import send_split_expense_payment_report_sms, send_split_expense_payment_report_mail
 from .services import send_split_include_notification_mail, send_split_include_notification_sms
+from .services import send_split_include_push_notification, send_split_expense_payment_push_notification
+
 
 class ExpenseListView(generics.ListCreateAPIView):
     queryset = Transaction.objects.all()
@@ -201,6 +203,7 @@ class SplitTransactionListView(generics.ListCreateAPIView):
             ExpenseListView.perform_create(ExpenseListView, payment_transaction_serializer)
             send_split_include_notification_mail(split)
             send_split_include_notification_sms(split)
+            send_split_include_push_notification(split)
 
         else:
             SplitTransaction.objects.get(pk=split.id).delete()
@@ -253,6 +256,7 @@ class PaySplit(APIView):
             send_split_expense_payment_report_mail(split, user, split_payment, paid_amount,
                                                    int(request.data.get('amount')))
             send_split_expense_payment_report_sms(split, user, request.data.get('amount'))
+            send_split_expense_payment_push_notification(split, user, request.data.get('amount'))
             return Response('Payment Successful')
 
         else:

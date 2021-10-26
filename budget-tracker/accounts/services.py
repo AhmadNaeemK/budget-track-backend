@@ -2,6 +2,9 @@ from django.conf import settings
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+
 
 def send_friend_request_email(friend_request):
     html_message = render_to_string('emails/friendRequestNotificationTemplate.html',
@@ -21,7 +24,7 @@ def send_friend_request_email(friend_request):
 
 
 def send_friend_request_sms(friend_request):
-    message = 'Friend request received from {sender} /nFrom BudgetTracker'
+    message = 'Friend request received from {sender} \nFrom BudgetTracker'
     try:
         settings.TWILIO_CLIENT.messages.create(
             body=message.format(sender=friend_request.user.username),
@@ -31,3 +34,18 @@ def send_friend_request_sms(friend_request):
     except Exception as e:
         print(e)
 
+
+def send_friend_request_notification(friend_request):
+    channel_layer = get_channel_layer()
+    group_name = 'notification_%s' % str(friend_request.receiver.id)
+    try:
+        message = 'Friend request received from %s' % friend_request.user.username
+        async_to_sync(channel_layer.group_send)(
+            group_name,
+            {
+                "type": "send_notification",
+                "notification": message,
+            },
+        )
+    except Exception as e:
+        print(e)
