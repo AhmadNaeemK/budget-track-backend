@@ -1,0 +1,22 @@
+{% extends 'baseMailTemplate.html' %}
+
+{% block content %}
+
+<div>
+    <p>You have been added to a split expense for {{title}}, paid by {{ paying_friend }}</p>
+</div>
+<div class="inner-container">
+    <table>
+        <tr>
+            <th>Title</th>
+            <th>Category</th>
+            <th>Total Amount</th>
+        </tr>
+        <tr>
+            <td>{{ title }}</td>
+            <td>{{ category }}</td>
+            <td>{{ total_amount }}</td>
+        </tr>
+    </table>
+</div>
+{% endblock content %}

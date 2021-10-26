@@ -1,6 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import generics, filters, status, serializers
+from rest_framework import generics, filters, serializers
 
 from django.db.models import Q
 
@@ -14,6 +14,10 @@ from .filters import TransactionFilterBackend, ScheduledTransactionFilterBackend
 from .filters import IncomeFilterBackend
 
 from datetime import datetime
+
+from .services import send_split_expense_payment_report_sms, send_split_expense_payment_report_mail
+from .services import send_split_include_notification_mail, send_split_include_notification_sms
+from .services import send_split_include_push_notification, send_split_expense_payment_push_notification
 
 
 class ExpenseListView(generics.ListCreateAPIView):
@@ -197,6 +201,10 @@ class SplitTransactionListView(generics.ListCreateAPIView):
                                                                      })
         if payment_transaction_serializer.is_valid():
             ExpenseListView.perform_create(ExpenseListView, payment_transaction_serializer)
+            send_split_include_notification_mail(split)
+            send_split_include_notification_sms(split)
+            send_split_include_push_notification(split)
+
         else:
             SplitTransaction.objects.get(pk=split.id).delete()
             raise serializers.ValidationError(payment_transaction_serializer.errors)
@@ -244,6 +252,11 @@ class PaySplit(APIView):
         if payment_transaction_serializer.is_valid() and receiving_transaction_serializer.is_valid():
             ExpenseListView.perform_create(ExpenseListView, payment_transaction_serializer)
             IncomeListView.perform_create(IncomeListView, receiving_transaction_serializer)
+
+            send_split_expense_payment_report_mail(split, user, split_payment, paid_amount,
+                                                   int(request.data.get('amount')))
+            send_split_expense_payment_report_sms(split, user, request.data.get('amount'))
+            send_split_expense_payment_push_notification(split, user, request.data.get('amount'))
             return Response('Payment Successful')
 
         else:

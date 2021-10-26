@@ -7,5 +7,9 @@ class FriendRequestAdmin(admin.ModelAdmin):
     list_display = ['user', 'receiver', 'request_time']
 
 
-admin.site.register(EmailAuthenticatedUser, UserAdmin)
+class CustomUserAdmin(UserAdmin):
+    list_display = ['username', 'email', 'phone_number', 'is_staff', 'last_login']
+
+
+admin.site.register(EmailAuthenticatedUser, CustomUserAdmin)
 admin.site.register(FriendRequest, FriendRequestAdmin)

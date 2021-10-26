@@ -1,17 +1,19 @@
 from rest_framework.response import Response
-from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework import permissions
 from rest_framework import generics, status
 
 from django.db.models import Q
+from django.template.loader import render_to_string
 
 from .models import EmailAuthenticatedUser as User, FriendRequest
 
 from rest_framework import filters
-from .filters import UserFilterBackend, ReceiverFilterBackend
 
+from .filters import UserFilterBackend, ReceiverFilterBackend
 from .serializers import UserSerializer, RegistrationSerializer, MyTokenObtainPairSerializer, FriendRequestSerializer
+
+from .services import send_friend_request_sms, send_friend_request_email, send_friend_request_notification
 
 from rest_framework_simplejwt.views import TokenObtainPairView
 
@@ -61,6 +63,12 @@ class SentFriendRequestListView(generics.ListCreateAPIView):
     queryset = FriendRequest.objects.all().order_by('request_time')
     filter_backends = [UserFilterBackend]
     serializer_class = FriendRequestSerializer
+
+    def perform_create(self, serializer):
+        friend_request = serializer.save()
+        send_friend_request_sms(friend_request)
+        send_friend_request_email(friend_request)
+        send_friend_request_notification(friend_request)
 
 
 class ReceivedFriendRequestListView(generics.ListAPIView):

@@ -9,6 +9,9 @@ djangorestframework = "*"
 djangorestframework-simplejwt = "*"
 django-cors-headers = "*"
 apscheduler = "*"
+twilio = "*"
+channels = "*"
+channels-redis = "*"
 
 [dev-packages]
 
