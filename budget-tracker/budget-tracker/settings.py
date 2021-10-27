@@ -24,7 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ['SECRET_KEY']
+SECRET_KEY = os.environ.get('SECRET_KEY', '')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -203,8 +203,8 @@ SIMPLE_JWT = {
 }
 
 # send grid api
-SENDER_EMAIL = os.environ['SENDER_EMAIL']
-SENDGRID_API_KEY = os.environ['SENDGRID_API_KEY']
+SENDER_EMAIL = os.environ.get('SENDER_EMAIL')
+SENDGRID_API_KEY = os.environ.get('SENDGRID_API_KEY')
 EMAIL_HOST = 'smtp.sendgrid.net'
 EMAIL_HOST_USER = 'apikey'
 EMAIL_HOST_PASSWORD = SENDGRID_API_KEY
@@ -212,12 +212,11 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 
 # twilio sms API
-TWILIO_ACCOUNT_SID = os.environ['TWILIO_ACCOUNT_SID']
-TWILIO_AUTH_TOKEN = os.environ['TWILIO_AUTH_TOKEN']
-PHN_NUM = os.environ['TWILIO_PHN_NUM']
+TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID')
+TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN')
+PHN_NUM = os.environ.get('TWILIO_PHN_NUM')
 TWILIO_CLIENT = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
 
 # Celery
-CELERY_TIMEZONE = TIME_ZONE
+CELERY_TIMEZONE = 'Asia/Karachi'
 CELERY_BROKER_URL = 'redis://localhost:6379/0'
-

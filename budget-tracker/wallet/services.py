@@ -5,13 +5,12 @@ from django.template.loader import render_to_string
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 
+import pytz, datetime
+
 from .models import TransactionCategories, Transaction
 from accounts.models import EmailAuthenticatedUser as User
 
 from.serializers import TransactionSerializer
-
-import datetime
-import pytz
 
 
 def get_tz_aware_current_time():
