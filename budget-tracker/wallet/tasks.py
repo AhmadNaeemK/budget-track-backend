@@ -4,6 +4,7 @@ from .models import Transaction, TransactionCategories
 
 from .services import send_daily_scheduled_transactions_email_reports, get_tz_aware_current_time
 from .services import send_scheduled_transaction_report_mail, send_scheduled_transaction_report_sms
+from .services import PushNotification, EmailNotification
 
 
 def get_scheduled_transactions_due():
@@ -30,15 +31,27 @@ def update_account(scheduled_transaction):
     return True
 
 
-@shared_task()
+@shared_task
 def update_scheduled_transactions():
     scheduled_transactions = get_scheduled_transactions_due()
     for transaction in scheduled_transactions:
         transaction.scheduled = not update_account(transaction)
         if not transaction.scheduled:
             transaction.save()
-            send_scheduled_transaction_report_mail(transaction, 'Succeeded')
-            send_scheduled_transaction_report_sms(transaction, 'Succeeded')
+            # send_scheduled_transaction_report_mail(transaction, 'Succeeded')
+            # send_scheduled_transaction_report_sms(transaction, 'Succeeded')
+            # PushNotification().notify(
+            #     notification_type=2,
+            #     data={
+            #         'transaction': transaction,
+            #         'status': 'Succeeded',
+            #     }
+            # )
+            EmailNotification().notify(notification_type=2,
+                                       data={
+                                           'transaction': transaction,
+                                           'status': 'Succeeded'
+                                       })
             print('Transaction completed')
 
 

@@ -19,6 +19,8 @@ from .services import send_split_expense_payment_report_sms, send_split_expense_
 from .services import send_split_include_notification_mail, send_split_include_notification_sms
 from .services import send_split_include_push_notification, send_split_expense_payment_push_notification
 
+from .services import EmailNotification, SMSNotification
+
 
 class ExpenseListView(generics.ListCreateAPIView):
     queryset = Transaction.objects.all()
@@ -201,9 +203,20 @@ class SplitTransactionListView(generics.ListCreateAPIView):
                                                                      })
         if payment_transaction_serializer.is_valid():
             ExpenseListView.perform_create(ExpenseListView, payment_transaction_serializer)
-            send_split_include_notification_mail(split)
-            send_split_include_notification_sms(split)
-            send_split_include_push_notification(split)
+            EmailNotification().notify(
+                                     notification_type=0,
+                                     data={
+                                         'split': split
+                                     })
+            SMSNotification().notify(
+                notification_type=0,
+                data={
+                    'split': split
+                }
+            )
+            # send_split_include_notification_mail(split)
+            # send_split_include_notification_sms(split)
+            # send_split_include_push_notification(split)
 
         else:
             SplitTransaction.objects.get(pk=split.id).delete()
@@ -253,9 +266,15 @@ class PaySplit(APIView):
             ExpenseListView.perform_create(ExpenseListView, payment_transaction_serializer)
             IncomeListView.perform_create(IncomeListView, receiving_transaction_serializer)
 
-            send_split_expense_payment_report_mail(split, user, split_payment, paid_amount,
-                                                   int(request.data.get('amount')))
-            send_split_expense_payment_report_sms(split, user, request.data.get('amount'))
+            # send_split_expense_payment_report_mail(split, user, split_payment, paid_amount,
+            #                                        int(request.data.get('amount')))
+            # send_split_expense_payment_report_sms(split, user, request.data.get('amount'))
+            EmailNotification().notify(notification_type=1,
+                                       data={
+                                           'split': split,
+                                           'user': user,
+                                           'payment': int(request.data.get('amount'))
+                                       })
             send_split_expense_payment_push_notification(split, user, request.data.get('amount'))
             return Response('Payment Successful')
 
