@@ -19,8 +19,8 @@ app.autodiscover_tasks()
 
 app.conf.beat_schedule = {
     'send_daily_scheduled_reports': {
-        'task': 'wallet.tasks.daily_scheduled_reports',
-        'schedule': crontab(minute=0, hour=0),
+        'task': 'wallet.tasks.send_daily_scheduled_transactions_email_reports',
+        'schedule': crontab(hour=0, minute=0),
     },
     'update_scheduled_transactions': {
         'task': 'wallet.tasks.update_scheduled_transactions',

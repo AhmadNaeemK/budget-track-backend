@@ -8,14 +8,14 @@ from asgiref.sync import async_to_sync
 
 def send_friend_request_email(friend_request):
     html_message = render_to_string('emails/friendRequestNotificationTemplate.html',
-                                    {'sender': friend_request.user.username}
+                                    {'sender': friend_request['user']['username']}
                                     )
     try:
         send_mail(
             subject='Friend Request Received',
-            recipient_list=[friend_request.receiver.email],
+            recipient_list=[friend_request['receiver']['email']],
             html_message=html_message,
-            message='Friend Request received from ' + friend_request.user.username,
+            message='Friend Request received from ' + friend_request['user']['username'],
             from_email=settings.SENDER_EMAIL
         )
 
@@ -27,19 +27,19 @@ def send_friend_request_sms(friend_request):
     message = 'Friend request received from {sender} \nFrom BudgetTracker'
     try:
         settings.TWILIO_CLIENT.messages.create(
-            body=message.format(sender=friend_request.user.username),
+            body=message.format(sender=friend_request['user']['username']),
             from_=settings.PHN_NUM,
-            to=friend_request.receiver.phone_number
+            to=friend_request['receiver']['phone_number']
         )
     except Exception as e:
         print(e)
 
 
-def send_friend_request_notification(friend_request):
+def send_friend_request_push_notification(friend_request):
     channel_layer = get_channel_layer()
-    group_name = 'notification_%s' % str(friend_request.receiver.id)
+    group_name = 'notification_%s' % str(friend_request['receiver']['id'])
     try:
-        message = 'Friend request received from %s' % friend_request.user.username
+        message = 'Friend request received from %s' % friend_request['user']['username']
         async_to_sync(channel_layer.group_send)(
             group_name,
             {
@@ -49,3 +49,9 @@ def send_friend_request_notification(friend_request):
         )
     except Exception as e:
         print(e)
+
+
+def notify_all(friend_request):
+    send_friend_request_push_notification(friend_request)
+    send_friend_request_sms(friend_request)
+    send_friend_request_email(friend_request)
