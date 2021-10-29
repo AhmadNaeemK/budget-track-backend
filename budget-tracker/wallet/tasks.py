@@ -57,12 +57,12 @@ def update_scheduled_transactions():
 
         transaction.scheduled = False
         transaction.save()
-        Notification().notify_all(notification_type=Notification.SCHEDULED_TRANSACTION_COMPLETION,
-                                  data={
-                                      'transaction': TransactionSerializer(transaction).data,
-                                      'status': 'Succeeded'
-                                  }
-                                  )
+        send_all_notification.delay(notification_type=Notification.SCHEDULED_TRANSACTION_COMPLETION,
+                                    data={
+                                        'transaction': TransactionSerializer(transaction).data,
+                                        'status': 'Succeeded'
+                                    }
+                                    )
         print("Transaction Completed")
 
 
@@ -80,12 +80,12 @@ def send_daily_scheduled_transactions_email_reports():
                                                             transaction_time__date__lte=curr_date)[:10]
         if scheduled_transactions:
             scheduled_transactions = list(TransactionSerializer(scheduled_transactions, many=True).data)
-            Notification().notify_email(notification_type=Notification.DAILY_SCHEDULED_REPORT,
-                                        data={
-                                            'scheduled_transactions': scheduled_transactions,
-                                            'curr_date': curr_date
-                                        }
-                                        )
+            send_email_notification.delay(notification_type=Notification.DAILY_SCHEDULED_REPORT,
+                                          data={
+                                              'scheduled_transactions': scheduled_transactions,
+                                              'curr_date': curr_date
+                                          }
+                                          )
 
 
 @shared_task

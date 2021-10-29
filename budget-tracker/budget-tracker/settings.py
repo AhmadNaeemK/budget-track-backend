@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'channels',
+    'django_celery_results',
     #my apps
     'wallet.apps.WalletConfig',
     'accounts.apps.AccountsConfig',
@@ -220,3 +221,4 @@ TWILIO_CLIENT = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
 # Celery
 CELERY_TIMEZONE = 'Asia/Karachi'
 CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'django-db'

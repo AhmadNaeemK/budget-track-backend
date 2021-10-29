@@ -6,6 +6,7 @@ from django.db.models import Q, Sum
 
 from .models import Transaction, CashAccount, SplitTransaction, TransactionCategories
 from accounts.models import EmailAuthenticatedUser as User
+from accounts.serializers import UserSerializer
 
 from .serializers import TransactionSerializer, CashAccountSerializer, ScheduledTransactionSerializer
 from .serializers import SplitTransactionSerializer, MaxSplitsDueSerializer
@@ -15,9 +16,8 @@ from .filters import IncomeFilterBackend
 
 from datetime import datetime
 
+from .tasks import send_all_notification
 from .services import Notification
-
-from .tasks import send_push_notification
 
 
 class ExpenseListView(generics.ListCreateAPIView):
@@ -200,7 +200,7 @@ class SplitTransactionListView(generics.ListCreateAPIView):
                                                                      'split_expense': split.id
                                                                      })
         if payment_transaction_serializer.is_valid():
-            ExpenseListView.perform_create(ExpenseListView, payment_transaction_serializer)
+            ExpenseListView().perform_create(payment_transaction_serializer)
             Notification().notify_all(notification_type=Notification.SPLIT_INCLUDE_NOTIFICATION,
                                       data={
                                           'split': split
@@ -251,16 +251,16 @@ class PaySplit(APIView):
                                                                        })
 
         if payment_transaction_serializer.is_valid() and receiving_transaction_serializer.is_valid():
-            ExpenseListView.perform_create(ExpenseListView, payment_transaction_serializer)
-            IncomeListView.perform_create(IncomeListView, receiving_transaction_serializer)
-            send_push_notification.delay(notification_type=Notification.SPLIT_PAYMENT_NOTIFICATION,
-                                         data={
-                                             'split': SplitTransactionSerializer(split).data,
-                                             'user': user.username,
-                                             'payment': int(request.data.get('amount')),
-                                             'split_payment': split_payment,
-                                             'paid_amount': paid_amount
-                                         })
+            ExpenseListView().perform_create(payment_transaction_serializer)
+            IncomeListView().perform_create(receiving_transaction_serializer)
+            send_all_notification.delay(notification_type=Notification.SPLIT_PAYMENT_NOTIFICATION,
+                                        data={
+                                            'split': SplitTransactionSerializer(split).data,
+                                            'user': UserSerializer(user).data,
+                                            'payment': int(request.data.get('amount')),
+                                            'split_payment': split_payment,
+                                            'paid_amount': paid_amount
+                                        })
             return Response('Payment Successful')
 
         else:
@@ -278,8 +278,7 @@ class SplitPaymentData(APIView):
 
     def get(self, request, pk):
         split = SplitTransaction.objects.get(pk=pk)
-        payable, required, paid = SplitTransactionSerializer.get_payable_amount(SplitTransactionSerializer,
-                                                                                user_id=request.user.id, split=split)
+        payable, required, paid = SplitTransactionSerializer().get_payable_amount(user_id=request.user.id, split=split)
         return Response({'required': payable, 'paid': paid})
 
 
@@ -293,9 +292,9 @@ class MaximumSplitsDue(generics.ListAPIView):
         ).distinct().order_by('creator__username')
 
         payable_splits = [{'split': split,
-                           'payable_amount': SplitTransactionSerializer.get_payable_amount(SplitTransactionSerializer,
-                                                                                           user_id=self.request.user.id,
-                                                                                           split=split)[0]}
+                           'payable_amount': SplitTransactionSerializer().get_payable_amount(
+                               user_id=self.request.user.id,
+                               split=split)[0]}
                           for split in splits]
         payable_splits.sort(reverse=True, key=lambda split: split['payable_amount'])
 

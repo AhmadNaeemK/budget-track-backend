@@ -13,6 +13,8 @@ channels = "*"
 channels-redis = "*"
 celery = "*"
 redis = "*"
+django-celery-results = "*"
+flower = "*"
 
 [dev-packages]
 

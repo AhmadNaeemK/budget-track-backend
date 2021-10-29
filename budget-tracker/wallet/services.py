@@ -52,19 +52,19 @@ class EmailNotification:
     def _for_split_payment_notification(self, data):
         context = {
             'title': data["split"]["title"],
-            'category': TransactionCategories.choices[data["split"]["category"]][1],
+            'category': data["split"]["category"][1],
             'total_split': data["split_payment"],
             'payment': data["payment"],
             'rem_payment': (
                     data["split_payment"] - data["paid_amount"] - data["payment"]
             ),
         }
-        title = f'Payment for {data["split"]["title"]} paid by {data["user"]}'
+        title = f'Payment for {data["split"]["title"]} paid by {data["user"]["username"]}'
         return {'template': 'emails/splitPaymentReportTemplate.html',
                 'context': context,
                 'subject': title,
                 'message': title,
-                'recipient_list': [data["split"]["paying_friend_email"]]
+                'recipient_list': [data["split"]["paying_friend"]["email"]]
                 }
 
     def _for_scheduled_transaction_report(self, data):
@@ -93,6 +93,7 @@ class EmailNotification:
                 'recipient_list': [data["scheduled_transactions"][0]["user"]["email"]]
                 }
 
+
 class SMSNotification:
     def notify(self, data, notification_type):
         notification = self._select_notification(notification_type)
@@ -107,15 +108,12 @@ class SMSNotification:
             return self._for_scheduled_transaction_report
 
     def _send_sms_notification(self, message, recipient_phone):
-        try:
-            message += '\nFrom BudgetTracker'
-            settings.TWILIO_CLIENT.messages.create(
-                body=message,
-                from_=settings.PHN_NUM,
-                to=recipient_phone
-            )
-        except Exception as e:
-            print(e)
+        message += '\nFrom BudgetTracker'
+        settings.TWILIO_CLIENT.messages.create(
+            body=message,
+            from_=settings.PHN_NUM,
+            to=recipient_phone
+        )
 
     def _for_split_include_notification(self, data):
         message = f'You have been added to a split expense ' \
@@ -183,7 +181,7 @@ class PushNotification:
     def _for_split_payment_notification(self, data):
 
         message = f'Payment amount {data["payment"]} for split "{data["split"]["title"]}" made ' \
-                  f'by {data["user"]}, added to your cash account'
+                  f'by {data["user"]["username"]}, added to your cash account'
         self._send_push_notification(
             message=message,
             group_name=f'notification_{data["split"]["paying_friend"]["id"]}'
@@ -211,8 +209,8 @@ class Notification:
 
     def notify_all(self, notification_type, data):
         self._email_service.notify(data, notification_type)
-        self._sms_service.notify(data, notification_type)
         self._push_notification_service.notify(data, notification_type)
+        self._sms_service.notify(data, notification_type)
 
     def notify_email(self, notification_type, data):
         self._email_service.notify(data, notification_type)
