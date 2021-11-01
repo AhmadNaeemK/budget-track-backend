@@ -6,10 +6,12 @@ phone_regex = RegexValidator(regex=r'^\+?1?\d{9,15}$',
                              message="Phone number must be entered in the format:" +
                                      " '+999999999'. Up to 15 digits allowed.")
 
+
 class EmailAuthenticatedUser(AbstractUser):
     email = models.EmailField(unique=True)
     friends = models.ManyToManyField("EmailAuthenticatedUser", blank=True)
     phone_number = models.CharField(validators=[phone_regex], max_length=17, blank=True)
+    display_picture = models.ImageField(blank=True, upload_to='display_pictures/')
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']

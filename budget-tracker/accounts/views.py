@@ -1,10 +1,12 @@
+import os
+
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import permissions
 from rest_framework import generics, status
 
 from django.db.models import Q
-from django.template.loader import render_to_string
+from django.conf import settings
 
 from .models import EmailAuthenticatedUser as User, FriendRequest
 
@@ -38,6 +40,11 @@ class UserList(generics.ListAPIView):
         return unsent_request_users.order_by('username')
 
 
+class UserRetrieveView(generics.RetrieveAPIView):
+    serializer_class = UserSerializer
+    queryset = User.objects.all()
+
+
 class RegisterUser(APIView):
     permission_classes = [permissions.AllowAny]
 
@@ -67,7 +74,6 @@ class SentFriendRequestListView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         friend_request = serializer.save()
         send_friend_request_notifications.delay(serializer.data)
-
 
 
 class ReceivedFriendRequestListView(generics.ListAPIView):
@@ -116,3 +122,15 @@ class FriendsListView(generics.ListAPIView):
         user = User.objects.get(pk=self.request.user.id)
         friends = user.friends.all().order_by('username')
         return friends
+
+
+class DisplayPictureView(APIView):
+
+    def patch(self, request):
+        user = User.objects.get(pk=request.user.id)
+        if user.display_picture:
+            os.remove(settings.MEDIA_ROOT + f'/{user.display_picture.name}')
+            user.display_picture = None
+        user.display_picture = request.FILES.get('display_picture')
+        user.save()
+        return Response(status=status.HTTP_202_ACCEPTED)

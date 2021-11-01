@@ -15,6 +15,7 @@ celery = "*"
 redis = "*"
 django-celery-results = "*"
 flower = "*"
+pillow = "*"
 
 [dev-packages]
 

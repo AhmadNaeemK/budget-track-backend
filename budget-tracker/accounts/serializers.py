@@ -8,7 +8,7 @@ from wallet.models import CashAccount
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'phone_number']
+        fields = ['id', 'username', 'email', 'phone_number', 'display_picture']
 
 
 class RegistrationSerializer(serializers.ModelSerializer):
@@ -27,23 +27,13 @@ class RegistrationSerializer(serializers.ModelSerializer):
         cashAccount = CashAccount.objects.create(title='Cash', user=user)
         return user
 
+
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
-    @classmethod
-    def get_token(cls, user):
-        token = super().get_token(user)
-
-        # Add custom claims
-        token['name'] = user.username
-        token['email'] = user.email
-
-        return token
-
     def validate(self, attrs):
         # The default result (access/refresh tokens)
         data = super(MyTokenObtainPairSerializer, self).validate(attrs)
         # Custom data you want to include
-        data.update({'user': self.user.username})
-        data.update({'id': self.user.id})
+        data.update({'user': UserSerializer(self.user).data})
         # and everything else you want to send in the response
         return data
 
