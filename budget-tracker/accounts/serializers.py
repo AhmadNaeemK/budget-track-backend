@@ -23,6 +23,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
         user = User.objects.create_user(
             validated_data['username'], validated_data['email'], validated_data['password'],)
         user.phone_number = validated_data['phone_number']
+        user.is_active = False
         user.save()
         cashAccount = CashAccount.objects.create(title='Cash', user=user)
         return user

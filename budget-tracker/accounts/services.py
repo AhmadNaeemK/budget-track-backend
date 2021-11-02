@@ -5,6 +5,10 @@ from django.template.loader import render_to_string
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 
+from .models import EmailAuthenticatedUser
+
+from rest_framework_simplejwt.tokens import RefreshToken
+
 
 def send_friend_request_email(friend_request):
     html_message = render_to_string('emails/friendRequestNotificationTemplate.html',
@@ -51,7 +55,30 @@ def send_friend_request_push_notification(friend_request):
         print(e)
 
 
-def notify_all(friend_request):
+def send_user_verification_email(user_id):
+    user = EmailAuthenticatedUser.objects.get(pk=user_id)
+    context = {
+        'btn_text': 'Verify',
+        'btn_link': f'http://localhost:3000/user/verify?token={str(RefreshToken.for_user(user).access_token)}'
+    }
+    html_message = render_to_string('emails/userVerificationEmailTemplate.html',
+                                    context=context
+                                    )
+    try:
+        send_mail(
+            subject='BudgetTracker Email Verification',
+            recipient_list=[user.email],
+            html_message=html_message,
+            message='Verify your BudgetTracker account',
+            from_email=settings.SENDER_EMAIL
+        )
+
+    except Exception as e:
+        print(e)
+
+
+
+def notify_friend_request_all(friend_request):
     send_friend_request_push_notification(friend_request)
     send_friend_request_sms(friend_request)
     send_friend_request_email(friend_request)

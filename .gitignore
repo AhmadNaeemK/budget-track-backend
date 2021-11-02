@@ -112,3 +112,5 @@ GitHub.sublime-settings
 
 #Media Folder
 /budget-tracker/media/
+
+budget-tracker/celerybeat-schedule

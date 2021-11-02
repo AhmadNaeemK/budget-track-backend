@@ -44,6 +44,7 @@
             }
 
             .btn:hover{
+                background-color: #367d39;
                 box-shadow: 0 12px 16px 0 rgba(0,0,0,0.24), 0 17px 50px 0 rgba(0,0,0,0.19);
             }
         </style>
@@ -59,7 +60,9 @@
                     Replace This
                 {% endblock content %}
                 <div class="container center" style="margin-top:10px">
-                        <button class="btn center" style="width:100%" type="button">View More</button>
+                    <a href={{btn_link}}>
+                        <button class="btn center" style="width:100%" type="button">{{btn_text}}</button>
+                    </a>
                 </div>
             </div>
         </div>

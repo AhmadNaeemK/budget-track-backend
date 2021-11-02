@@ -1,5 +1,7 @@
 import os
 
+import jwt
+
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import permissions
@@ -15,9 +17,10 @@ from rest_framework import filters
 from .filters import UserFilterBackend, ReceiverFilterBackend
 from .serializers import UserSerializer, RegistrationSerializer, MyTokenObtainPairSerializer, FriendRequestSerializer
 
-from .tasks import send_friend_request_notifications
+from .tasks import send_friend_request_notifications, send_user_verification_email_notification
 
 from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.authentication import JWTTokenUserAuthentication
 
 
 class MyTokenObtainPairView(TokenObtainPairView):
@@ -45,13 +48,15 @@ class UserRetrieveView(generics.RetrieveAPIView):
     queryset = User.objects.all()
 
 
-class RegisterUser(APIView):
+class RegisterUser(generics.GenericAPIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
         serializer = RegistrationSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
+            user = User.objects.get(pk=user.id)
+            send_user_verification_email_notification.delay(user.id)
             return Response({
                 'user': UserSerializer(user).data,
                 'status': status.HTTP_201_CREATED,
@@ -109,7 +114,7 @@ class RemoveFriendView(APIView):
             user.friends.remove(friend_to_be_removed)
             friend_to_be_removed.friends.remove(user)
             return Response('Friend Removed', status=status.HTTP_204_NO_CONTENT)
-        except:
+        except Exception as e:
             return Response('Could not Remove Friend', status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -124,7 +129,7 @@ class FriendsListView(generics.ListAPIView):
         return friends
 
 
-class DisplayPictureView(APIView):
+class DisplayPictureView(generics.GenericAPIView):
 
     def patch(self, request):
         user = User.objects.get(pk=request.user.id)
@@ -134,3 +139,36 @@ class DisplayPictureView(APIView):
         user.display_picture = request.FILES.get('display_picture')
         user.save()
         return Response(status=status.HTTP_202_ACCEPTED)
+
+
+class VerifyUserView(generics.GenericAPIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        token = request.GET.get('token')
+        try:
+            validated_token = JWTTokenUserAuthentication().get_validated_token(token)
+            user = User.objects.get(pk=validated_token.payload.get('user_id'))
+            user.is_active = True
+            user.save()
+            return Response('User Verified', status=status.HTTP_200_OK)
+
+        except Exception as e:
+            payload = jwt.decode(jwt=token,
+                                 key=settings.SIMPLE_JWT['SIGNING_KEY'],
+                                 algorithms=[settings.SIMPLE_JWT['ALGORITHM']],
+                                 options={"verify_signature": False})
+            send_user_verification_email_notification.delay(payload.get('user_id'))
+            return Response('Unable to verify', status=status.HTTP_400_BAD_REQUEST)
+
+
+class VerificationLinkRegeneration(generics.GenericAPIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        try:
+            user = User.objects.get(email=request.GET.get('email'))
+            send_user_verification_email_notification.delay(user.id)
+            return Response('Verification mail sent', status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response('Could not find user', status=status.HTTP_400_BAD_REQUEST)

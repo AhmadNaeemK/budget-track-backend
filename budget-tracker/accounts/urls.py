@@ -19,5 +19,7 @@ urlpatterns = [
     path('acceptRequest/<int:pk>', views.AcceptFriendRequestView.as_view(), name='accept_friend_request'),
     path('removeFriend/<int:pk>', views.RemoveFriendView.as_view(), name='remove_friend'),
     path('friendsList/', views.FriendsListView.as_view(), name='friends_list'),
-    path('displayPicture/', views.DisplayPictureView.as_view(), name='display_picture')
+    path('displayPicture/', views.DisplayPictureView.as_view(), name='display_picture'),
+    path('verify/', views.VerifyUserView.as_view(), name='verify_user'),
+    path('verify/regenerate', views.VerificationLinkRegeneration.as_view(), name='regen_verification_link'),
 ]
