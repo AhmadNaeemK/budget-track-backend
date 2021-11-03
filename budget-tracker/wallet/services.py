@@ -94,8 +94,7 @@ class EmailNotification:
                 }
 
     def _for_daily_scheduled_report(self, data):
-        context = {**data, **{'btn_text': 'View More',
-                              'btn_link': self.budget_tracker_link}}
+        context = {**data, 'btn_text': 'View More', 'btn_link': self.budget_tracker_link}
         title = f"Transactions Scheduled for Today {data['curr_date']}"
         return {'template': 'emails/scheduledTransactionsTodayTemplate.html',
                 'context': context,

@@ -22,4 +22,6 @@ urlpatterns = [
     path('displayPicture/', views.DisplayPictureView.as_view(), name='display_picture'),
     path('verify/', views.VerifyUserView.as_view(), name='verify_user'),
     path('verify/regenerate', views.VerificationLinkRegeneration.as_view(), name='regen_verification_link'),
+    path('recover/password/', views.PasswordRecoveryLinkGeneration.as_view(), name='password_recover'),
+    path('updatePassword/', views.UpdatePasswordView.as_view(), name='update_password')
 ]

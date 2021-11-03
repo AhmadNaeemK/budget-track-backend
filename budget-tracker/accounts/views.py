@@ -4,6 +4,7 @@ import jwt
 
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import permissions
 from rest_framework import generics, status
 
@@ -17,7 +18,8 @@ from rest_framework import filters
 from .filters import UserFilterBackend, ReceiverFilterBackend
 from .serializers import UserSerializer, RegistrationSerializer, MyTokenObtainPairSerializer, FriendRequestSerializer
 
-from .tasks import send_friend_request_notifications, send_user_verification_email_notification
+from .tasks import send_friend_request_notifications, send_user_verification_email_notification, \
+    send_password_recovery_email_notification
 
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.authentication import JWTTokenUserAuthentication
@@ -130,6 +132,7 @@ class FriendsListView(generics.ListAPIView):
 
 
 class DisplayPictureView(generics.GenericAPIView):
+    parser_classes = (MultiPartParser, FormParser)
 
     def patch(self, request):
         user = User.objects.get(pk=request.user.id)
@@ -138,7 +141,7 @@ class DisplayPictureView(generics.GenericAPIView):
             user.display_picture = None
         user.display_picture = request.FILES.get('display_picture')
         user.save()
-        return Response(status=status.HTTP_202_ACCEPTED)
+        return Response("Display Picture Updated", status=status.HTTP_202_ACCEPTED)
 
 
 class VerifyUserView(generics.GenericAPIView):
@@ -169,6 +172,27 @@ class VerificationLinkRegeneration(generics.GenericAPIView):
         try:
             user = User.objects.get(email=request.GET.get('email'))
             send_user_verification_email_notification.delay(user.id)
+            return Response('Verification mail sent', status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response('Could not find user', status=status.HTTP_400_BAD_REQUEST)
+
+
+class UpdatePasswordView(generics.GenericAPIView):
+
+    def post(self, request):
+        user = User.objects.get(pk=request.user.id)
+        user.set_password(request.data.get('password'))
+        user.save()
+        return Response('Password Reset', status=status.HTTP_200_OK)
+
+
+class PasswordRecoveryLinkGeneration(generics.GenericAPIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        try:
+            user = User.objects.get(email=request.GET.get('email'))
+            send_password_recovery_email_notification.delay(user.id)
             return Response('Verification mail sent', status=status.HTTP_200_OK)
         except Exception as e:
             return Response('Could not find user', status=status.HTTP_400_BAD_REQUEST)
