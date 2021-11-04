@@ -1,7 +1,10 @@
 FROM python:3
 COPY Pipfile /
-RUN pip install pipenv
-RUN pipenv install
+COPY Pipfile.lock /
 COPY budget-tracker/ /
+RUN pip install pipenv
+RUN pipenv install --system
 EXPOSE 8000
-CMD pipenv run python manage.py runserver
+
+ENTRYPOINT ["python"]
+CMD ["manage.py", "runserver", "0.0.0.0:8000"]
