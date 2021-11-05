@@ -1,6 +1,7 @@
 import os
 
 import jwt
+import rest_framework_simplejwt.exceptions
 
 from rest_framework.response import Response
 from rest_framework.views import APIView
