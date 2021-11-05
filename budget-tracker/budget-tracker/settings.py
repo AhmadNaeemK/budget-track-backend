@@ -31,7 +31,6 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -166,8 +165,9 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # CORS origins
+FRONTEND_URL = "http://localhost:3000"
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
+    FRONTEND_URL,
 ]
 
 # Authentication User

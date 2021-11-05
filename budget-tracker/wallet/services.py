@@ -11,7 +11,7 @@ from twilio.base.exceptions import TwilioRestException
 
 class EmailNotification:
 
-    budget_tracker_link = 'http://localhost:3000'
+    budget_tracker_link = settings.FRONTEND_URL
 
     def notify(self, data, notification_type):
         notification = self._select_notification(notification_type)
@@ -44,8 +44,8 @@ class EmailNotification:
             'category': TransactionCategories.choices[data["split"]["category"][1]],
             'total_amount': data["split"]["total_amount"],
             'paying_friend': data["split"]["paying_friend"]["username"],
-            'btn_text': 'View More',
-            'btn_link': self.budget_tracker_link
+            'button_text': 'View More',
+            'button_link': self.budget_tracker_link
         }
         title = f'{data["split"]["title"]} paid by {data["split"]["paying_friend"]["username"]}'
         return {'template': 'emails/splitIncludeNotificationTemplate.html',
@@ -64,8 +64,8 @@ class EmailNotification:
             'rem_payment': (
                     data["split_payment"] - data["paid_amount"] - data["payment"]
             ),
-            'btn_text': 'View More',
-            'btn_link': self.budget_tracker_link
+            'button_text': 'View More',
+            'button_link': self.budget_tracker_link
         }
         title = f'Payment for {data["split"]["title"]} paid by {data["user"]["username"]}'
         return {'template': 'emails/splitPaymentReportTemplate.html',
@@ -82,8 +82,8 @@ class EmailNotification:
             'amount': data["transaction"]["amount"],
             'status': data["status"],
             'remaining': data["transaction"]["cash_account"]["balance"],
-            'btn_text': 'View More',
-            'btn_link': self.budget_tracker_link
+            'button_text': 'View More',
+            'button_link': self.budget_tracker_link
         }
         title = f'Scheduled Transaction has {data["status"]}'
         return {'template': 'emails/scheduledTransactionReportTemplate.html',
@@ -94,7 +94,7 @@ class EmailNotification:
                 }
 
     def _for_daily_scheduled_report(self, data):
-        context = {**data, 'btn_text': 'View More', 'btn_link': self.budget_tracker_link}
+        context = {**data, 'button_text': 'View More', 'button_link': self.budget_tracker_link}
         title = f"Transactions Scheduled for Today {data['curr_date']}"
         return {'template': 'emails/scheduledTransactionsTodayTemplate.html',
                 'context': context,

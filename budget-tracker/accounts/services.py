@@ -1,3 +1,4 @@
+import jwt
 from django.conf import settings
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
@@ -12,7 +13,10 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 def send_friend_request_email(friend_request):
     html_message = render_to_string('emails/friendRequestNotificationTemplate.html',
-                                    {'sender': friend_request['user']['username']}
+                                    {'sender': friend_request['user']['username'],
+                                     'button_text': 'Verify',
+                                     'button_link': settings.FRONTEND_URL
+                                     }
                                     )
     try:
         send_mail(
@@ -57,9 +61,10 @@ def send_friend_request_push_notification(friend_request):
 
 def send_user_verification_email(user_id):
     user = EmailAuthenticatedUser.objects.get(pk=user_id)
+    token = RefreshToken.for_user(user).access_token
     context = {
-        'btn_text': 'Verify',
-        'btn_link': f'http://localhost:3000/user/verify?token={str(RefreshToken.for_user(user).access_token)}'
+        'button_text': 'Verify',
+        'button_link': f'{settings.FRONTEND_URL}/user/verify?token={token}'
     }
     html_message = render_to_string('emails/userVerificationEmailTemplate.html',
                                     context=context
@@ -80,8 +85,8 @@ def send_user_verification_email(user_id):
 def send_password_recovery_email(user_id):
     user = EmailAuthenticatedUser.objects.get(pk=user_id)
     context = {
-        'btn_text': 'Verify',
-        'btn_link': f'http://localhost:3000/recover/password?token={str(RefreshToken.for_user(user).access_token)}'
+        'button_text': 'Verify',
+        'button_link': f'{settings.FRONTEND_URL}/recover/password?token={str(RefreshToken.for_user(user).access_token)}'
     }
     html_message = render_to_string('emails/passwordRecoveryMailTemplate.html',
                                     context=context
