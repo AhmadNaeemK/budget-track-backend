@@ -156,7 +156,7 @@ class VerifyUserView(generics.GenericAPIView):
             user.save()
             return Response('User Verified', status=status.HTTP_200_OK)
 
-        except Exception as e:
+        except rest_framework_simplejwt.exceptions.InvalidToken as e:
             payload = jwt.decode(jwt=token,
                                  key=settings.SIMPLE_JWT['SIGNING_KEY'],
                                  algorithms=[settings.SIMPLE_JWT['ALGORITHM']],
@@ -173,7 +173,7 @@ class VerificationLinkRegeneration(generics.GenericAPIView):
             user = User.objects.get(email=request.GET.get('email'))
             send_user_verification_email_notification.delay(user.id)
             return Response('Verification mail sent', status=status.HTTP_200_OK)
-        except Exception as e:
+        except User.DoesNotExist as exception:
             return Response('Could not find user', status=status.HTTP_400_BAD_REQUEST)
 
 
