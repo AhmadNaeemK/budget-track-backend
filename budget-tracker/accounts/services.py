@@ -1,3 +1,4 @@
+import jwt
 from django.conf import settings
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
@@ -5,10 +6,17 @@ from django.template.loader import render_to_string
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 
+from .models import EmailAuthenticatedUser
+
+from rest_framework_simplejwt.tokens import RefreshToken
+
 
 def send_friend_request_email(friend_request):
     html_message = render_to_string('emails/friendRequestNotificationTemplate.html',
-                                    {'sender': friend_request['user']['username']}
+                                    {'sender': friend_request['user']['username'],
+                                     'button_text': 'Verify',
+                                     'button_link': settings.FRONTEND_URL
+                                     }
                                     )
     try:
         send_mail(
@@ -51,7 +59,52 @@ def send_friend_request_push_notification(friend_request):
         print(e)
 
 
-def notify_all(friend_request):
+def send_user_verification_email(user_id):
+    user = EmailAuthenticatedUser.objects.get(pk=user_id)
+    token = RefreshToken.for_user(user).access_token
+    context = {
+        'button_text': 'Verify',
+        'button_link': f'{settings.FRONTEND_URL}/user/verify?token={token}'
+    }
+    html_message = render_to_string('emails/userVerificationEmailTemplate.html',
+                                    context=context
+                                    )
+    try:
+        send_mail(
+            subject='BudgetTracker Email Verification',
+            recipient_list=[user.email],
+            html_message=html_message,
+            message='Verify your BudgetTracker account',
+            from_email=settings.SENDER_EMAIL
+        )
+
+    except Exception as e:
+        print(e)
+
+
+def send_password_recovery_email(user_id):
+    user = EmailAuthenticatedUser.objects.get(pk=user_id)
+    context = {
+        'button_text': 'Verify',
+        'button_link': f'{settings.FRONTEND_URL}/recover/password?token={str(RefreshToken.for_user(user).access_token)}'
+    }
+    html_message = render_to_string('emails/passwordRecoveryMailTemplate.html',
+                                    context=context
+                                    )
+    try:
+        send_mail(
+            subject='BudgetTracker Password Recovery',
+            recipient_list=[user.email],
+            html_message=html_message,
+            message='Recover Password',
+            from_email=settings.SENDER_EMAIL
+        )
+
+    except Exception as e:
+        print(e)
+
+
+def notify_friend_request_all(friend_request):
     send_friend_request_push_notification(friend_request)
     send_friend_request_sms(friend_request)
     send_friend_request_email(friend_request)

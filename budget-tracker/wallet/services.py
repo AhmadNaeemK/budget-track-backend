@@ -6,9 +6,13 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 
 from .models import TransactionCategories
+from twilio.base.exceptions import TwilioRestException
 
 
 class EmailNotification:
+
+    budget_tracker_link = settings.FRONTEND_URL
+
     def notify(self, data, notification_type):
         notification = self._select_notification(notification_type)
         self._send_email_notification(**notification(data))
@@ -39,7 +43,9 @@ class EmailNotification:
             'title': data["split"]["title"],
             'category': TransactionCategories.choices[data["split"]["category"][1]],
             'total_amount': data["split"]["total_amount"],
-            'paying_friend': data["split"]["paying_friend"]["username"]
+            'paying_friend': data["split"]["paying_friend"]["username"],
+            'button_text': 'View More',
+            'button_link': self.budget_tracker_link
         }
         title = f'{data["split"]["title"]} paid by {data["split"]["paying_friend"]["username"]}'
         return {'template': 'emails/splitIncludeNotificationTemplate.html',
@@ -58,6 +64,8 @@ class EmailNotification:
             'rem_payment': (
                     data["split_payment"] - data["paid_amount"] - data["payment"]
             ),
+            'button_text': 'View More',
+            'button_link': self.budget_tracker_link
         }
         title = f'Payment for {data["split"]["title"]} paid by {data["user"]["username"]}'
         return {'template': 'emails/splitPaymentReportTemplate.html',
@@ -74,6 +82,8 @@ class EmailNotification:
             'amount': data["transaction"]["amount"],
             'status': data["status"],
             'remaining': data["transaction"]["cash_account"]["balance"],
+            'button_text': 'View More',
+            'button_link': self.budget_tracker_link
         }
         title = f'Scheduled Transaction has {data["status"]}'
         return {'template': 'emails/scheduledTransactionReportTemplate.html',
@@ -84,10 +94,10 @@ class EmailNotification:
                 }
 
     def _for_daily_scheduled_report(self, data):
-
+        context = {**data, 'button_text': 'View More', 'button_link': self.budget_tracker_link}
         title = f"Transactions Scheduled for Today {data['curr_date']}"
         return {'template': 'emails/scheduledTransactionsTodayTemplate.html',
-                'context': data,
+                'context': context,
                 'subject': title,
                 'message': title,
                 'recipient_list': [data["scheduled_transactions"][0]["user"]["email"]]
@@ -109,11 +119,14 @@ class SMSNotification:
 
     def _send_sms_notification(self, message, recipient_phone):
         message += '\nFrom BudgetTracker'
-        settings.TWILIO_CLIENT.messages.create(
-            body=message,
-            from_=settings.PHN_NUM,
-            to=recipient_phone
-        )
+        try:
+            settings.TWILIO_CLIENT.messages.create(
+                body=message,
+                from_=settings.PHN_NUM,
+                to=recipient_phone
+            )
+        except TwilioRestException as e:
+            print(e)
 
     def _for_split_include_notification(self, data):
         message = f'You have been added to a split expense ' \
