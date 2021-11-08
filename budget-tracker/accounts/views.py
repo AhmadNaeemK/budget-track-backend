@@ -13,7 +13,7 @@ from rest_framework import filters
 from .filters import UserFilterBackend, ReceiverFilterBackend
 from .serializers import UserSerializer, RegistrationSerializer, MyTokenObtainPairSerializer, FriendRequestSerializer
 
-from .services import send_friend_request_sms, send_friend_request_email, send_friend_request_notification
+from .tasks import send_friend_request_notifications
 
 from rest_framework_simplejwt.views import TokenObtainPairView
 
@@ -66,9 +66,8 @@ class SentFriendRequestListView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         friend_request = serializer.save()
-        send_friend_request_sms(friend_request)
-        send_friend_request_email(friend_request)
-        send_friend_request_notification(friend_request)
+        send_friend_request_notifications.delay(serializer.data)
+
 
 
 class ReceivedFriendRequestListView(generics.ListAPIView):

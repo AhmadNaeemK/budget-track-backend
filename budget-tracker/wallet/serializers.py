@@ -54,16 +54,16 @@ class SplitTransactionSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        payable, required, paid = self.get_payable_amount(self.context.get('request').user.id, instance)
+        if self.context.get('request'):
+            payable, required, paid = self.get_payable_amount(self.context.get('request').user.id, instance)
+            data['completed_payment'] = paid >= required
         for friend in data['all_friends_involved']:
             payable, required, paid = self.get_payable_amount(friend['id'], instance)
             friend['payable'] = payable
             friend['required'] = required
             friend['paid'] = paid
-        data['completed_payment'] = paid >= required
         data['category'] = TransactionCategories.choices[data['category']]
         return data
-
 
 
 class TransactionSerializer(serializers.ModelSerializer):
