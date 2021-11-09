@@ -122,7 +122,8 @@ class ExpenseCategoryDataView(APIView):
     def get(self, request):
         def get_total_expenses(choice, account):
             category_expenses = Transaction.objects.filter(user=request.user.id, category=choice, cash_account=account,
-                                                           transaction_time__month=request.GET.get('month'))
+                                                           transaction_time__month=request.GET.get('month'),
+                                                           scheduled=False)
             total = sum([expense.amount for expense in category_expenses])
             return total
 
@@ -143,12 +144,12 @@ class MonthlyTransactionDataView(APIView):
 
         def get_month_data(month):
             expenses = Transaction.objects.filter(user=request.user.id, transaction_time__month=month,
-                                                  transaction_time__year=datetime.now().year
+                                                  transaction_time__year=datetime.now().year, scheduled=False
                                                   )
             expenses = expenses.exclude(category=TransactionCategories.Income.value)
             incomes = Transaction.objects.filter(user=request.user.id, category=TransactionCategories.Income.value,
                                                  transaction_time__month=month,
-                                                 transaction_time__year=datetime.now().year)
+                                                 transaction_time__year=datetime.now().year, scheduled=False)
             return get_total_of_transactions(incomes), get_total_of_transactions(expenses)
 
         data = {
@@ -201,10 +202,10 @@ class SplitTransactionListView(generics.ListCreateAPIView):
                                                                      })
         if payment_transaction_serializer.is_valid():
             ExpenseListView().perform_create(payment_transaction_serializer)
-            Notification().notify_all(notification_type=Notification.SPLIT_INCLUDE_NOTIFICATION,
-                                      data={
-                                          'split': split
-                                      })
+            send_all_notification.delay(notification_type=Notification.SPLIT_INCLUDE_NOTIFICATION,
+                                        data={
+                                            'split': SplitTransactionSerializer(split).data
+                                        })
 
         else:
             SplitTransaction.objects.get(pk=split.id).delete()
@@ -222,8 +223,7 @@ class PaySplit(APIView):
         split = SplitTransaction.objects.get(pk=request.data.get('split_id'))
         split_payment = split.total_amount // len(split.all_friends_involved.all())
         paid_amount = Transaction.objects.filter(user=request.user.id, split_expense=split).aggregate(Sum('amount'))[
-            'amount__sum']
-
+            'amount__sum'] or 0
         if int(request.data.get('amount')) > (split_payment - paid_amount):
             raise serializers.ValidationError('Entering More Than Required Amount')
 
