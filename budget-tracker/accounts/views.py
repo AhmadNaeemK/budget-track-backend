@@ -46,7 +46,7 @@ class UserList(generics.ListAPIView):
         return unsent_request_users.order_by('username')
 
 
-class UserRetrieveView(generics.RetrieveAPIView):
+class UserRetrieveUpdateView(generics.RetrieveUpdateAPIView):
     serializer_class = UserSerializer
     queryset = User.objects.all()
 
@@ -197,8 +197,3 @@ class PasswordRecoveryLinkGeneration(generics.GenericAPIView):
             return Response('Verification mail sent', status=status.HTTP_200_OK)
         except Exception as e:
             return Response('Could not find user', status=status.HTTP_400_BAD_REQUEST)
-
-
-class UpdateFullnameView(generics.UpdateAPIView):
-    serializer_class = UserSerializer
-    queryset = User.objects.all()

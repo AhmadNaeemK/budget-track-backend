@@ -21,12 +21,9 @@ class RegistrationSerializer(serializers.ModelSerializer):
                         }
 
     def create(self, validated_data):
-        user = User.objects.create_user(
-            validated_data['username'], validated_data['email'], validated_data['password'],)
-        user.phone_number = validated_data['phone_number']
-        user.first_name = validated_data['first_name']
-        user.last_name = validated_data['last_name']
+        user = User(**validated_data)
         user.is_active = False
+        user.set_password(validated_data['password'])
         user.save()
         cashAccount = CashAccount.objects.create(title='Cash', user=user)
         return user
@@ -46,6 +43,7 @@ class FriendRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = FriendRequest
         fields = '__all__'
+
     user = UserSerializer(read_only=True)
     receiver = UserSerializer(read_only=True)
 
@@ -66,4 +64,3 @@ class FriendRequestSerializer(serializers.ModelSerializer):
         validated_data['receiver'] = User.objects.get(pk=self.initial_data.get('receiver'))
         request = FriendRequest.objects.create(**validated_data)
         return request
-

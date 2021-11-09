@@ -7,7 +7,7 @@ from . import views
 app_name = 'accounts'
 urlpatterns = [
     path('list/', views.UserList.as_view(), name='user_list'),
-    path('<int:pk>/', views.UserRetrieveView.as_view(), name='retrieve_user'),
+    path('<int:pk>/', views.UserRetrieveUpdateView.as_view(), name='retrieve_update_user'),
     path('register/', views.RegisterUser.as_view(), name='register'),
     path('logout/', views.LogoutUser.as_view(), name='logout'),
     path('token/', views.MyTokenObtainPairView.as_view(), name='token'),
@@ -24,5 +24,4 @@ urlpatterns = [
     path('verify/regenerate', views.VerificationLinkRegeneration.as_view(), name='regen_verification_link'),
     path('recover/password/', views.PasswordRecoveryLinkGeneration.as_view(), name='password_recover'),
     path('updatePassword/', views.UpdatePasswordView.as_view(), name='update_password'),
-    path('updateFullname/<int:pk>', views.UpdateFullnameView.as_view(), name='update_password')
 ]
