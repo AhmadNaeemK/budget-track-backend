@@ -21,4 +21,5 @@ urlpatterns = [
     path('transactionsInSplit/', views.TransactionsWithSplit.as_view(), name='transactions_with_split'),
     path('monthlyTransactionChartData/', views.MonthlyTransactionDataView.as_view(),
          name='monthly_transaction_chart_data'),
+    path('downloadReport/', views.DownloadTransactionReportView.as_view(), name='download_transaction_report')
 ]

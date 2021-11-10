@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework import generics, filters, serializers
 
 from django.db.models import Q, Sum
+from django.http import HttpResponse
 
 from .models import Transaction, CashAccount, SplitTransaction, TransactionCategories
 from accounts.models import EmailAuthenticatedUser as User
@@ -18,6 +19,8 @@ from datetime import datetime
 
 from .tasks import send_all_notification
 from .services import Notification
+
+from .ReportMaker import ReportMaker
 
 
 class ExpenseListView(generics.ListCreateAPIView):
@@ -223,7 +226,7 @@ class PaySplit(APIView):
         split = SplitTransaction.objects.get(pk=request.data.get('split_id'))
         split_payment = split.total_amount // len(split.all_friends_involved.all())
         paid_amount = Transaction.objects.filter(user=request.user.id, split_expense=split).aggregate(Sum('amount'))[
-            'amount__sum'] or 0
+                          'amount__sum'] or 0
         if int(request.data.get('amount')) > (split_payment - paid_amount):
             raise serializers.ValidationError('Entering More Than Required Amount')
 
@@ -299,3 +302,17 @@ class MaximumSplitsDue(generics.ListAPIView):
         payable_splits.sort(reverse=True, key=lambda split: split['payable_amount'])
 
         return payable_splits[:5]
+
+
+class DownloadTransactionReportView(APIView):
+
+    def get(self, request):
+        request_data = {**request.GET, 'user_id': request.user.id}
+        report = ReportMaker(request_data).make_report()
+        report_name = f'{request.user.username}_Transactions_Report.csv'
+        response = HttpResponse(
+            content_type='text/csv',
+            headers={'Content-Disposition': f'attachment; filename="{report_name}"'},
+        )
+        response.write(report)
+        return response
