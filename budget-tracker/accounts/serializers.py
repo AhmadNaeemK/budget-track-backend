@@ -6,14 +6,11 @@ from wallet.models import CashAccount
 
 
 class UserSerializer(serializers.ModelSerializer):
-    fullname = serializers.SerializerMethodField()
-
+    fullname = serializers.CharField(source='get_full_name')
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'phone_number', 'display_picture', 'first_name', 'last_name', 'fullname']
 
-    def get_fullname(self, obj):
-        return f'{obj.first_name} {obj.last_name}'
 
 
 class RegistrationSerializer(serializers.ModelSerializer):
