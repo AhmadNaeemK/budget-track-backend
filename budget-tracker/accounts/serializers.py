@@ -6,24 +6,26 @@ from wallet.models import CashAccount
 
 
 class UserSerializer(serializers.ModelSerializer):
+    fullname = serializers.CharField(source='get_full_name')
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'phone_number', 'display_picture']
+        fields = ['id', 'username', 'email', 'phone_number', 'display_picture', 'first_name', 'last_name', 'fullname']
+
 
 
 class RegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'password', 'phone_number')
+        fields = ('id', 'username', 'email', 'password', 'phone_number', 'first_name', 'last_name')
         extra_kwargs = {'password': {'write_only': True}, 'username': {'required': True, 'allow_blank': False},
-                        'phone_number': {'required': True}
+                        'phone_number': {'required': True}, 'first_name': {'required': True, 'allow_blank': False},
+                        'last_name': {'required': True, 'allow_blank': False}
                         }
 
     def create(self, validated_data):
-        user = User.objects.create_user(
-            validated_data['username'], validated_data['email'], validated_data['password'],)
-        user.phone_number = validated_data['phone_number']
+        user = User(**validated_data)
         user.is_active = False
+        user.set_password(validated_data['password'])
         user.save()
         cashAccount = CashAccount.objects.create(title='Cash', user=user)
         return user
@@ -43,6 +45,7 @@ class FriendRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = FriendRequest
         fields = '__all__'
+
     user = UserSerializer(read_only=True)
     receiver = UserSerializer(read_only=True)
 
@@ -63,4 +66,3 @@ class FriendRequestSerializer(serializers.ModelSerializer):
         validated_data['receiver'] = User.objects.get(pk=self.initial_data.get('receiver'))
         request = FriendRequest.objects.create(**validated_data)
         return request
-

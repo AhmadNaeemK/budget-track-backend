@@ -46,7 +46,7 @@ class UserList(generics.ListAPIView):
         return unsent_request_users.order_by('username')
 
 
-class UserRetrieveView(generics.RetrieveAPIView):
+class UserRetrieveUpdateView(generics.RetrieveUpdateAPIView):
     serializer_class = UserSerializer
     queryset = User.objects.all()
 

@@ -41,7 +41,7 @@ class EmailNotification:
     def _for_split_include_notification(self, data):
         context = {
             'title': data["split"]["title"],
-            'category': TransactionCategories.choices[data["split"]["category"][1]],
+            'category': data["split"]["category"][1],
             'total_amount': data["split"]["total_amount"],
             'paying_friend': data["split"]["paying_friend"]["username"],
             'button_text': 'View More',
@@ -52,7 +52,7 @@ class EmailNotification:
                 'context': context,
                 'subject': title,
                 'message': title,
-                'recipient_list': data["split"]["all_friends_involved"]
+                'recipient_list': [friend["email"] for friend in data["split"]["all_friends_involved"]]
                 }
 
     def _for_split_payment_notification(self, data):
@@ -185,10 +185,10 @@ class PushNotification:
     def _for_split_include_notification(self, data):
         message = f'You have been added to a split expense for {data["split"]["title"]} by ' \
                   f'{data["split"]["creator"]["username"]}.'
-        for friend in data.get("split").all_friends_involved.all():
+        for friend in data.get("split")["all_friends_involved"]:
             self._send_push_notification(
                 message=message,
-                group_name=f'notification_{friend.id}'
+                group_name=f'notification_{friend["id"]}'
             )
 
     def _for_split_payment_notification(self, data):
