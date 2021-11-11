@@ -4,7 +4,6 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-django = "*"
 djangorestframework = "*"
 djangorestframework-simplejwt = "*"
 django-cors-headers = "*"
@@ -16,6 +15,9 @@ redis = "*"
 django-celery-results = "*"
 flower = "*"
 pillow = "*"
+pytest = "*"
+django = "*"
+pytest-django = "*"
 
 [dev-packages]
 
