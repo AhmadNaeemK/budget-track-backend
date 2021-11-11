@@ -63,4 +63,3 @@ class Transaction(models.Model):
     amount = models.IntegerField(default=0)
 
     split_expense = models.ForeignKey(to=SplitTransaction, on_delete=models.CASCADE, blank=True, null=True)
-
