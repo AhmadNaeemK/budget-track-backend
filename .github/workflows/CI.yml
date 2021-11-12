@@ -20,10 +20,6 @@ jobs:
       - name: Install Dependencies
         run: |
           pipenv install --system
-      - name: migrate
-        run: |
-          cd budget-tracker
-          python manage.py migrate
       - name: Tests with pytests
         run: |
           pytest
