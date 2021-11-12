@@ -111,6 +111,6 @@ Control.system-ca-bundle
 GitHub.sublime-settings
 
 #Media Folder
-/budget-tracker/media/
+/budget_tracker/media/
 
-budget-tracker/celerybeat-schedule
+budget_tracker/celerybeat-schedule
