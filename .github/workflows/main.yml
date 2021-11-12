@@ -23,4 +23,5 @@ jobs:
 
       - name: Tests with pytests
         run: |
+          pip freeze
           pytest
