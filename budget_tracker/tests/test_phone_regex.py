@@ -1,5 +1,8 @@
 import re
 
+import django
+django.setup()
+
 from accounts.models import phone_regex
 
 import pytest

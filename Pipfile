@@ -17,7 +17,6 @@ flower = "*"
 pillow = "*"
 pytest = "*"
 django = "*"
-pytest-django = "*"
 
 [dev-packages]
 
