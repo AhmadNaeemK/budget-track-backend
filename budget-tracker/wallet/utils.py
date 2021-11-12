@@ -13,6 +13,7 @@ class SplitTransactionUtils:
         payable = payable if payable > 0 else 0
         return payable, required_payment, paid_amount
 
+
 class TransactionUtils:
 
     def get_new_account_balance(prev_balance, amount, type):

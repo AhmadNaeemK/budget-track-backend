@@ -1,16 +1,16 @@
 import re
 
-import django
-django.setup()
-
 from accounts import models
 
 import pytest
 
+test_data = [
+    ('+923089058725', True),
+    ('921564323412', False),
+    ('3214', False)
+]
 
-def test_phone_regex():
-    assert re.match(models.phone_regex.regex, '+923089058725')
-    # tests "+" at beginning of phone string
-    assert re.match(models.phone_regex.regex, '923089058725') is None
-    # tests length of phone string
-    assert re.match(models.phone_regex.regex, '923') is None
+
+@pytest.mark.parametrize('phone_num,expected', test_data)
+def test_phone_regex(phone_num, expected):
+    assert (re.match(models.phone_regex.regex, phone_num) is not None) is expected
