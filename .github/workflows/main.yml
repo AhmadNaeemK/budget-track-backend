@@ -19,9 +19,8 @@ jobs:
           python -m pip install pipenv
       - name: Install Dependencies
         run: |
-          pipenv install
+          pipenv install --dev
 
       - name: Tests with pytests
         run: |
-          pipenv shell
           pytest
