@@ -16,4 +16,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install dependecies
         run: |
-          ls
+          python pip install pipenv
+          pipenv install --dev
+          
+      - name: Tests with pytests
+        run:
+          pytest
