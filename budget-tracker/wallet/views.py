@@ -306,7 +306,7 @@ class MaximumSplitsDue(generics.ListAPIView):
         ).distinct().order_by('creator__username')
 
         payable_splits = [{'split': split,
-                           'payable_amount': SplitTransactionSerializer().get_payable_amount(
+                           'payable_amount': SplitTransactionUtils.get_user_payable_amount(
                                user_id=self.request.user.id,
                                split=split)[0]}
                           for split in splits]
