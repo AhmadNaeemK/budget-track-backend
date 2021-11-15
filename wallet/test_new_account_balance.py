@@ -10,6 +10,6 @@ test_data = [
 ]
 
 
-@pytest.mark.parametrize('prev_balance,amount,type,expected', test_data)
+@pytest.mark.parametrize('prev_balance,amount,category,expected', test_data)
 def test_new_account_balance(prev_balance, amount, category, expected):
     assert TransactionUtils().get_new_account_balance(prev_balance, amount, category) == expected
