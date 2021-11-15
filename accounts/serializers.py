@@ -6,6 +6,7 @@ from accounts.models import EmailAuthenticatedUser as User, FriendRequest
 
 
 class UserSerializer(serializers.ModelSerializer):
+    fullname = serializers.CharField(source='get_full_name')
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'phone_number', 'display_picture', 'first_name',
