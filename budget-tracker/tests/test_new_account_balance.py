@@ -1,7 +1,7 @@
 import pytest
 
-from .utils import TransactionUtils
-from .models import TransactionCategories
+from wallet.utils import TransactionUtils
+from wallet.models import TransactionCategories
 
 test_data = [
     (0, 20, TransactionCategories.Income.value, 20),
@@ -13,6 +13,3 @@ test_data = [
 @pytest.mark.parametrize('prev_balance,amount,type,expected', test_data)
 def test_new_account_balance(prev_balance, amount, type, expected):
     assert TransactionUtils.get_new_account_balance(prev_balance, amount, type) == expected
-
-def test():
-    assert  1==1
