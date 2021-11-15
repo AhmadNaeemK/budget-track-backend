@@ -26,5 +26,6 @@ jobs:
 
       - name: Tests with pytests
         run: |
+          export DJANGO_SETTINGS_MODULE=budget_tracker.settings
           pipenv run pytest
           
