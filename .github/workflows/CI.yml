@@ -34,5 +34,6 @@ jobs:
           SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
           DJANGO_SETTINGS_MODULE: budget_tracker.settings
         run: |
+          cd budget_tracker
           pipenv run pytest
           
