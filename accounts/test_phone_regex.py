@@ -1,8 +1,7 @@
 import re
-
-from accounts import models
-
 import pytest
+
+from .models import phone_regex
 
 test_data = [
     ('+923089058725', True),
@@ -13,4 +12,4 @@ test_data = [
 
 @pytest.mark.parametrize('phone_num,expected', test_data)
 def test_phone_regex(phone_num, expected):
-    assert (re.match(models.phone_regex.regex, phone_num) is not None) is expected
+    assert (re.match(phone_regex.regex, phone_num) is not None) is expected

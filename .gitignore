@@ -54,7 +54,7 @@ wheels/
 pip-log.txt
 pip-delete-this-directory.txt
 
-# Unit test / coverage reports
+# Unit tests / coverage reports
 htmlcov/
 .tox/
 .coverage
@@ -111,6 +111,6 @@ Control.system-ca-bundle
 GitHub.sublime-settings
 
 #Media Folder
-/budget-tracker/media/
+/budget_tracker/media/
 
-budget-tracker/celerybeat-schedule
+budget_tracker/celerybeat-schedule
