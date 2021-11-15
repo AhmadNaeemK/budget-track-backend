@@ -14,7 +14,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 def send_friend_request_email(friend_request):
     html_message = render_to_string('emails/friendRequestNotificationTemplate.html',
                                     {'sender': friend_request['user']['username'],
-                                     'button_text': 'Verify',
+                                     'button_text': 'Check',
                                      'button_link': settings.FRONTEND_URL
                                      }
                                     )
