@@ -32,6 +32,7 @@ jobs:
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
           TWILIO_PHN_NUM: ${{ secrets.TWILIO_PHN_NUM }}
           SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
+          DJANGO_SETTINGS_MODULE: budget_tracker.settings
         run: |
           pipenv run pytest
           
