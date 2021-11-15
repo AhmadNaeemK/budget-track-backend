@@ -22,7 +22,7 @@ from datetime import datetime
 from .tasks import send_all_notification
 from .services import Notification
 
-from .report_maker import ReportMaker
+from .ReportMaker import ReportMaker
 
 
 class ExpenseListView(generics.ListCreateAPIView):
