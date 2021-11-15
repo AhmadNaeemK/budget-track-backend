@@ -5,7 +5,6 @@ from django.template.loader import render_to_string
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 
-from .models import TransactionCategories
 from twilio.base.exceptions import TwilioRestException
 
 

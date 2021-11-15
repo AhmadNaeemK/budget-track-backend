@@ -3,7 +3,7 @@ from rest_framework import serializers
 from django.conf import settings
 
 from .models import Transaction, CashAccount, SplitTransaction, TransactionCategories
-
+from .utils import SplitTransactionUtils
 
 from accounts.models import EmailAuthenticatedUser
 from accounts.serializers import UserSerializer
@@ -32,17 +32,6 @@ class SplitTransactionSerializer(serializers.ModelSerializer):
     paying_friend = UserSerializer(read_only=True)
     all_friends_involved = UserSerializer(many=True, read_only=True)
 
-    def get_payable_amount(self, user_id, split):
-        required_payment = split.total_amount // len(split.all_friends_involved.all())
-        rel_transactions = Transaction.objects.filter(user=user_id, split_expense=split).exclude(
-            category=TransactionCategories.Income.value)
-        paid_amount = sum([transaction.amount for transaction in rel_transactions])
-        payable = required_payment - paid_amount
-        if payable < 0:
-            return 0, required_payment, paid_amount
-        else:
-            return payable, required_payment, paid_amount
-
     def create(self, validated_data):
         validated_data['creator'] = EmailAuthenticatedUser.objects.get(pk=self.initial_data.get('creator'))
         validated_data['paying_friend'] = EmailAuthenticatedUser.objects.get(pk=self.initial_data.get('paying_friend'))
@@ -55,10 +44,10 @@ class SplitTransactionSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
         if self.context.get('request'):
-            payable, required, paid = self.get_payable_amount(self.context.get('request').user.id, instance)
+            payable, required, paid = SplitTransactionUtils.get_user_payable_amount(self.context.get('request').user.id, instance)
             data['completed_payment'] = paid >= required
         for friend in data['all_friends_involved']:
-            payable, required, paid = self.get_payable_amount(friend['id'], instance)
+            payable, required, paid = SplitTransactionUtils.get_user_payable_amount(friend['id'], instance)
             friend['payable'] = payable
             friend['required'] = required
             friend['paid'] = paid

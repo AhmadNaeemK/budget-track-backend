@@ -1,5 +1,5 @@
 """
-ASGI config for budget-tracker project.
+ASGI config for budget_tracker project.
 
 It exposes the ASGI callable as a module-level variable named ``application``.
 
@@ -14,7 +14,7 @@ from channels.routing import ProtocolTypeRouter, URLRouter
 from django.core.asgi import get_asgi_application
 import accounts.routing
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'budget-tracker.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'budget_tracker.settings')
 
 application = ProtocolTypeRouter({
     "http": get_asgi_application(),

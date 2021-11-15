@@ -1,0 +1,3 @@
+"Date","Title","Account","Category","Amount"
+{% for transaction in transactions %}"{{transaction.transaction_time|addslashes}}","{{transaction.title|addslashes}}","{{transaction.cash_account.title|addslashes}}","{{transaction.category.1|addslashes}}","{{transaction.amount|addslashes}}"
+{% endfor %}
