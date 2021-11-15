@@ -7,9 +7,10 @@ from celery import shared_task
 from django.conf import settings
 
 from accounts.models import EmailAuthenticatedUser as User
-from .models import Transaction, TransactionCategories
-from .serializers import TransactionSerializer
-from .services import Notification
+from wallet.models import Transaction, TransactionCategories
+from wallet.serializers import TransactionSerializer
+from wallet.services import Notification
+from wallet.exceptions import AccountBalanceLimitException
 
 
 def get_tz_aware_current_time():
@@ -48,9 +49,7 @@ def update_account(scheduled_transaction):
                                           'status': 'Failed'
                                       }
                                       )
-            raise Exception(
-                f"Cash Account of user {scheduled_transaction.user.username} "
-                f"does not have enough balance ")
+            raise AccountBalanceLimitException(scheduled_transaction.user.username)
         cash_account.balance -= scheduled_transaction.amount
     cash_account.save()
     return True
@@ -65,7 +64,7 @@ def update_scheduled_transactions():
     for transaction in scheduled_transactions:
         try:
             update_account(transaction)
-        except Exception as AccountBalanceLimitException:
+        except AccountBalanceLimitException:
             print(AccountBalanceLimitException)
             continue
 

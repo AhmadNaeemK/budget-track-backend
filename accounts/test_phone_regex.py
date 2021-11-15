@@ -1,7 +1,7 @@
 import re
 import pytest
 
-from .models import phone_regex
+from accounts.models import phone_regex
 
 test_data = [
     ('+923089058725', True),
