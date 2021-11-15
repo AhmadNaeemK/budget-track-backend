@@ -33,8 +33,5 @@ jobs:
           TWILIO_PHN_NUM: ${{ secrets.TWILIO_PHN_NUM }}
           SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
         run: |
-          env
-          cd budget_tracker
-          export DJANGO_SETTINGS_MODULE=budget_tracker.settings
-          pipenv run pytest budget_tracker
+          pipenv run pytest
           
