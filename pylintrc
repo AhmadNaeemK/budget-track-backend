@@ -1,0 +1,6 @@
+[MASTER]
+    ignore=migrations
+
+[MESSAGES CONTROL]
+    disable=
+        missing-docstring
