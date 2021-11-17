@@ -35,5 +35,5 @@ jobs:
           DJANGO_SETTINGS_MODULE: budget_tracker.settings
         run: |
           pipenv run pytest
-          pipenv run pylint budget_tracker accounts wallet maange.py
+          pipenv run pylint .
           
