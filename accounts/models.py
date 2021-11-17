@@ -18,8 +18,12 @@ class EmailAuthenticatedUser(AbstractUser):
 
 
 class FriendRequest(models.Model):
-    user = models.ForeignKey(to=EmailAuthenticatedUser, related_name='Sender', on_delete=models.CASCADE)
-    receiver = models.ForeignKey(to=EmailAuthenticatedUser, related_name='Receiver', on_delete=models.CASCADE)
+    user = models.ForeignKey(to=EmailAuthenticatedUser,
+                             related_name='Sender',
+                             on_delete=models.CASCADE)
+    receiver = models.ForeignKey(to=EmailAuthenticatedUser,
+                                 related_name='Receiver',
+                                 on_delete=models.CASCADE)
     request_time = models.DateTimeField(auto_now=True)
 
     class Meta:

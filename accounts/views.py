@@ -1,33 +1,30 @@
 import os
-
 import jwt
 import rest_framework_simplejwt.exceptions
-
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser
-from rest_framework import permissions
-from rest_framework import generics, status
+from rest_framework import permissions, generics, status, filters
+from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.authentication import JWTTokenUserAuthentication
 
 from django.db.models import Q
 from django.conf import settings
 
-from .models import EmailAuthenticatedUser as User, FriendRequest
+from accounts.models import EmailAuthenticatedUser as User, FriendRequest
 
-from rest_framework import filters
+from accounts.filters import UserFilterBackend, ReceiverFilterBackend
+from accounts.serializers import UserSerializer, RegistrationSerializer, \
+    ValidateTokenPairSerializer, FriendRequestSerializer
 
-from .filters import UserFilterBackend, ReceiverFilterBackend
-from .serializers import UserSerializer, RegistrationSerializer, MyTokenObtainPairSerializer, FriendRequestSerializer
+from accounts.tasks import send_friend_request_notifications, \
+    send_user_verification_email_notification, send_password_recovery_email_notification
 
-from .tasks import send_friend_request_notifications, send_user_verification_email_notification, \
-    send_password_recovery_email_notification
 
-from rest_framework_simplejwt.views import TokenObtainPairView
-from rest_framework_simplejwt.authentication import JWTTokenUserAuthentication
 
 
 class MyTokenObtainPairView(TokenObtainPairView):
-    serializer_class = MyTokenObtainPairSerializer
+    serializer_class = ValidateTokenPairSerializer
 
 
 class UserList(generics.ListAPIView):
@@ -37,10 +34,12 @@ class UserList(generics.ListAPIView):
 
     def get_queryset(self):
         users = User.objects.exclude(id=self.request.user.id)
-        sent_friend_request_list = [req.receiver.id for req in FriendRequest.objects.filter(user=self.request.user.id)]
+        sent_friend_request_list = [req.receiver.id for req in
+                                    FriendRequest.objects.filter(user=self.request.user.id)]
         received_friend_request_list = [req.user.id for req in
                                         FriendRequest.objects.filter(receiver=self.request.user.id)]
-        friends_list = [friend.id for friend in User.objects.get(pk=self.request.user.id).friends.all()]
+        friends_list = [friend.id for friend in
+                        User.objects.get(pk=self.request.user.id).friends.all()]
         unsent_request_users = users.exclude(
             Q(id__in=sent_friend_request_list + received_friend_request_list + friends_list))
         return unsent_request_users.order_by('username')
@@ -80,7 +79,7 @@ class SentFriendRequestListView(generics.ListCreateAPIView):
     serializer_class = FriendRequestSerializer
 
     def perform_create(self, serializer):
-        friend_request = serializer.save()
+        serializer.save()
         send_friend_request_notifications.delay(serializer.data)
 
 
@@ -113,12 +112,9 @@ class RemoveFriendView(APIView):
     def get(self, request, pk):
         user = User.objects.get(pk=request.user.id)
         friend_to_be_removed = user.friends.get(pk=pk)
-        try:
-            user.friends.remove(friend_to_be_removed)
-            friend_to_be_removed.friends.remove(user)
-            return Response('Friend Removed', status=status.HTTP_204_NO_CONTENT)
-        except Exception as e:
-            return Response('Could not Remove Friend', status=status.HTTP_400_BAD_REQUEST)
+        user.friends.remove(friend_to_be_removed)
+        friend_to_be_removed.friends.remove(user)
+        return Response('Friend Removed', status=status.HTTP_204_NO_CONTENT)
 
 
 class FriendsListView(generics.ListAPIView):
@@ -157,7 +153,7 @@ class VerifyUserView(generics.GenericAPIView):
             user.save()
             return Response('User Verified', status=status.HTTP_200_OK)
 
-        except rest_framework_simplejwt.exceptions.InvalidToken as e:
+        except rest_framework_simplejwt.exceptions.InvalidToken:
             payload = jwt.decode(jwt=token,
                                  key=settings.SIMPLE_JWT['SIGNING_KEY'],
                                  algorithms=[settings.SIMPLE_JWT['ALGORITHM']],
@@ -175,16 +171,19 @@ class VerificationLinkRegeneration(generics.GenericAPIView):
             send_user_verification_email_notification.delay(user.id)
             return Response('Verification mail sent', status=status.HTTP_200_OK)
         except User.DoesNotExist as exception:
-            return Response('Could not find user', status=status.HTTP_400_BAD_REQUEST)
+            return Response(exception, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UpdatePasswordView(generics.GenericAPIView):
 
     def post(self, request):
-        user = User.objects.get(pk=request.user.id)
-        user.set_password(request.data.get('password'))
-        user.save()
-        return Response('Password Reset', status=status.HTTP_200_OK)
+        try:
+            user = User.objects.get(pk=request.user.id)
+            user.set_password(request.data.get('password'))
+            user.save()
+            return Response('Password Reset', status=status.HTTP_200_OK)
+        except User.DoesNotExist as exception:
+            return Response(exception, status=status.HTTP_400_BAD_REQUEST)
 
 
 class PasswordRecoveryLinkGeneration(generics.GenericAPIView):
@@ -195,5 +194,5 @@ class PasswordRecoveryLinkGeneration(generics.GenericAPIView):
             user = User.objects.get(email=request.GET.get('email'))
             send_password_recovery_email_notification.delay(user.id)
             return Response('Verification mail sent', status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response('Could not find user', status=status.HTTP_400_BAD_REQUEST)
+        except User.DoesNotExist as exception:
+            return Response(exception, status=status.HTTP_400_BAD_REQUEST)

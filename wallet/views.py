@@ -1,34 +1,34 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import generics, filters, serializers
-from rest_framework.exceptions import ValidationError
+from datetime import datetime
 
 from django.db.models import Q, Sum
 from django.http import HttpResponse
+from rest_framework import generics, filters, serializers
+from rest_framework.exceptions import ValidationError
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from .models import Transaction, CashAccount, SplitTransaction, TransactionCategories
-from .utils import SplitTransactionUtils, TransactionUtils
 from accounts.models import EmailAuthenticatedUser as User
 from accounts.serializers import UserSerializer
-
-from .serializers import TransactionSerializer, CashAccountSerializer, ScheduledTransactionSerializer
-from .serializers import SplitTransactionSerializer, MaxSplitsDueSerializer
-
-from .filters import TransactionFilterBackend, ScheduledTransactionFilterBackend, ExpenseFilterBackend
-from .filters import IncomeFilterBackend
-
-from datetime import datetime
-
-from .tasks import send_all_notification
-from .services import Notification
-
-from .report_maker import ReportMaker
+from wallet.filters import IncomeFilterBackend
+from wallet.filters import TransactionFilterBackend, ScheduledTransactionFilterBackend, \
+    ExpenseFilterBackend
+from wallet.models import Transaction, CashAccount, SplitTransaction, TransactionCategories
+from wallet.report_maker import ReportMaker
+from wallet.serializers import SplitTransactionSerializer, MaxSplitsDueSerializer
+from wallet.serializers import TransactionSerializer, CashAccountSerializer, \
+    ScheduledTransactionSerializer
+from wallet.services import Notification
+from wallet.tasks import send_all_notification
+from wallet.utils import SplitTransactionUtils, TransactionUtils
 
 
 class ExpenseListView(generics.ListCreateAPIView):
     queryset = Transaction.objects.all()
     serializer_class = TransactionSerializer
-    filter_backends = [TransactionFilterBackend, ExpenseFilterBackend, filters.OrderingFilter, filters.SearchFilter]
+    filter_backends = [TransactionFilterBackend,
+                       ExpenseFilterBackend,
+                       filters.OrderingFilter,
+                       filters.SearchFilter]
     search_fields = ['title']
     ordering = ['-transaction_time']
 
@@ -36,7 +36,7 @@ class ExpenseListView(generics.ListCreateAPIView):
         if serializer.validated_data.get('category') == TransactionCategories.Income.value:
             raise serializers.ValidationError('Income can not be an expense')
         account = CashAccount.objects.get(pk=serializer.initial_data.get('cash_account'))
-        account.balance = TransactionUtils.get_new_account_balance(
+        account.balance = TransactionUtils().get_new_account_balance(
             account.balance,
             serializer.validated_data.get('amount'),
             serializer.validated_data.get('category')
@@ -52,7 +52,7 @@ class ExpenseView(generics.RetrieveUpdateDestroyAPIView):
 
     def perform_update(self, serializer):
         account = serializer.instance.cash_account
-        account.balance = TransactionUtils.get_new_account_balance(
+        account.balance = TransactionUtils().get_new_account_balance(
             account.balance + serializer.instance.amount,
             serializer.validated_data.get('amount'),
             serializer.instance.category
@@ -70,7 +70,10 @@ class ExpenseView(generics.RetrieveUpdateDestroyAPIView):
 class IncomeListView(generics.ListCreateAPIView):
     queryset = Transaction.objects.all()
     serializer_class = TransactionSerializer
-    filter_backends = [TransactionFilterBackend, IncomeFilterBackend, filters.OrderingFilter, filters.SearchFilter]
+    filter_backends = [TransactionFilterBackend,
+                       IncomeFilterBackend,
+                       filters.OrderingFilter,
+                       filters.SearchFilter]
     search_fields = ['title']
     ordering = ['-transaction_time']
 
@@ -78,7 +81,7 @@ class IncomeListView(generics.ListCreateAPIView):
         if serializer.validated_data.get('category') != TransactionCategories.Income.value:
             raise ValidationError('Income can not be an expense')
         account = CashAccount.objects.get(pk=serializer.initial_data.get('cash_account'))
-        account.balance = TransactionUtils.get_new_account_balance(
+        account.balance = TransactionUtils().get_new_account_balance(
             account.balance,
             serializer.validated_data.get('amount'),
             serializer.validated_data.get('category')
@@ -94,7 +97,7 @@ class IncomeView(generics.RetrieveUpdateDestroyAPIView):
 
     def perform_update(self, serializer):
         account = serializer.instance.cash_account
-        account.balance = TransactionUtils.get_new_account_balance(
+        account.balance = TransactionUtils().get_new_account_balance(
             account.balance - serializer.instance.amount,
             serializer.validated_data.get('amount'),
             serializer.instance.category
@@ -129,7 +132,7 @@ class CashAccountView(generics.RetrieveUpdateDestroyAPIView):
 
 class TransactionCategoryChoicesList(APIView):
 
-    def get(self, request):
+    def get(self):
         choices = TransactionCategories.choices
 
         return Response(choices)
@@ -142,7 +145,8 @@ class ExpenseCategoryDataView(APIView):
             total_category_expenses = Transaction.objects.filter(user=request.user.id,
                                                                  category=category,
                                                                  cash_account=account,
-                                                                 transaction_time__month=request.GET.get('month'),
+                                                                 transaction_time__month=
+                                                                 request.GET.get('month'),
                                                                  scheduled=False
                                                                  ).aggregate(Sum('amount')
                                                                              )['amount__sum']
@@ -161,13 +165,17 @@ class ExpenseCategoryDataView(APIView):
 class MonthlyTransactionDataView(APIView):
 
     def get_month_data(self, user_id, month):
-        transactions = Transaction.objects.filter(user=user_id, transaction_time__month=month,
-                                                  transaction_time__year=datetime.now().year, scheduled=False
+        transactions = Transaction.objects.filter(user=user_id,
+                                                  transaction_time__month=month,
+                                                  transaction_time__year=datetime.now().year,
+                                                  scheduled=False
                                                   )
         total_expenses = transactions.exclude(category=TransactionCategories.Income.value
                                               ).aggregate(Sum('amount'))['amount__sum']
-        total_income = transactions.filter(category=TransactionCategories.Income.value).aggregate(Sum('amount'))[
-            'amount__sum']
+        total_income = \
+            transactions.filter(category=TransactionCategories.Income.value).aggregate(
+                Sum('amount'))[
+                'amount__sum']
         return total_income, total_expenses
 
     def get(self, request):
@@ -186,14 +194,17 @@ class MonthlyTransactionDataView(APIView):
 class ScheduledTransactionListView(generics.ListCreateAPIView):
     queryset = Transaction.objects.all().order_by('transaction_time')
     serializer_class = ScheduledTransactionSerializer
-    filter_backends = [ScheduledTransactionFilterBackend, filters.OrderingFilter, filters.SearchFilter]
+    filter_backends = [ScheduledTransactionFilterBackend,
+                       filters.OrderingFilter,
+                       filters.SearchFilter]
     search_fields = ['title']
 
 
 class ScheduledTransactionView(generics.RetrieveDestroyAPIView):
     queryset = Transaction.objects.all()
     serializer_class = ScheduledTransactionSerializer
-    filter_backends = [ScheduledTransactionFilterBackend, filters.OrderingFilter]
+    filter_backends = [ScheduledTransactionFilterBackend,
+                       filters.OrderingFilter]
 
 
 class SplitTransactionListView(generics.ListCreateAPIView):
@@ -202,22 +213,23 @@ class SplitTransactionListView(generics.ListCreateAPIView):
     search_fields = ['title', 'creator__username', 'paying_friend__username']
 
     def get_queryset(self):
-        return SplitTransaction.objects.filter(Q(creator=self.request.user.id) | Q(paying_friend=self.request.user.id) |
-                                               Q(all_friends_involved__id=self.request.user.id)
-                                               ).distinct().order_by('creator__username')
+        return SplitTransaction.objects.filter(
+            Q(creator=self.request.user.id) | Q(paying_friend=self.request.user.id) |
+            Q(all_friends_involved__id=self.request.user.id)
+        ).distinct().order_by('creator__username')
 
     def perform_create(self, serializer):
         split = serializer.save()
-        payment_transaction_title = "{split_title} paid by {split_creator}".format(split_title=split.title,
-                                                                                   split_creator=split.creator.username)
+        payment_transaction_title = f"{split.title} paid by {split.creator.username}"
         payer_cash_account = CashAccount.objects.get(user=split.paying_friend, title='Cash')
-        payment_transaction_serializer = TransactionSerializer(data={'title': payment_transaction_title,
-                                                                     'user': split.paying_friend.id,
-                                                                     'cash_account': payer_cash_account.id,
-                                                                     'category': split.category,
-                                                                     'amount': split.total_amount,
-                                                                     'split_expense': split.id
-                                                                     })
+        payment_transaction_serializer = TransactionSerializer(
+            data={'title': payment_transaction_title,
+                  'user': split.paying_friend.id,
+                  'cash_account': payer_cash_account.id,
+                  'category': split.category,
+                  'amount': split.total_amount,
+                  'split_expense': split.id
+                  })
         if payment_transaction_serializer.is_valid():
             ExpenseListView().perform_create(payment_transaction_serializer)
             send_all_notification.delay(notification_type=Notification.SPLIT_INCLUDE_NOTIFICATION,
@@ -239,32 +251,36 @@ class PaySplit(APIView):
 
     def post(self, request):
         split = SplitTransaction.objects.get(pk=request.data.get('split_id'))
-        payable, split_payment, paid_amount = SplitTransactionUtils.get_user_payable_amount(request.user.id, split)
+        payable, split_payment, paid_amount = SplitTransactionUtils().get_user_payable_amount(
+            request.user.id, split)
         if int(request.data.get('amount')) > (split_payment - paid_amount):
             raise ValidationError('Entering More Than Required Amount')
 
         payment_transaction_title = f"{split.title} paid by {split.creator.username}"
         payer_cash_account = CashAccount.objects.get(user=request.user.id, title='Cash')
-        payment_transaction_serializer = TransactionSerializer(data={'title': payment_transaction_title,
-                                                                     'user': request.user.id,
-                                                                     'cash_account': payer_cash_account.id,
-                                                                     'category': split.category,
-                                                                     'amount': request.data.get(
-                                                                         'amount'),
-                                                                     'split_expense': split.id
-                                                                     })
+        payment_transaction_serializer = TransactionSerializer(
+            data={'title': payment_transaction_title,
+                  'user': request.user.id,
+                  'cash_account': payer_cash_account.id,
+                  'category': split.category,
+                  'amount': request.data.get(
+                      'amount'),
+                  'split_expense': split.id
+                  })
         user = User.objects.get(pk=request.user.id)
         receiving_transaction_title = f"Payment for {split.title} paid by {user.username}"
         receiver_cash_account = CashAccount.objects.get(user=split.paying_friend.id, title='Cash')
-        receiving_transaction_serializer = TransactionSerializer(data={'title': receiving_transaction_title,
-                                                                       'user': split.paying_friend.id,
-                                                                       'cash_account': receiver_cash_account.id,
-                                                                       'category': TransactionCategories.choices[0][0],
-                                                                       'amount': request.data.get('amount'),
-                                                                       'split_expense': split.id
-                                                                       })
+        receiving_transaction_serializer = TransactionSerializer(
+            data={'title': receiving_transaction_title,
+                  'user': split.paying_friend.id,
+                  'cash_account': receiver_cash_account.id,
+                  'category': TransactionCategories.choices[0][0],
+                  'amount': request.data.get('amount'),
+                  'split_expense': split.id
+                  })
 
-        if payment_transaction_serializer.is_valid() and receiving_transaction_serializer.is_valid():
+        if (payment_transaction_serializer.is_valid() and
+                receiving_transaction_serializer.is_valid()):
             ExpenseListView().perform_create(payment_transaction_serializer)
             IncomeListView().perform_create(receiving_transaction_serializer)
             send_all_notification.delay(notification_type=Notification.SPLIT_PAYMENT_NOTIFICATION,
@@ -292,7 +308,8 @@ class SplitPaymentData(APIView):
 
     def get(self, request, pk):
         split = SplitTransaction.objects.get(pk=pk)
-        payable, required, paid = SplitTransactionUtils.get_user_payable_amount(request.user.id, split)
+        payable, required, paid = SplitTransactionUtils().get_user_payable_amount(request.user.id,
+                                                                                  split)
         return Response({'required': payable, 'paid': paid})
 
 
@@ -306,7 +323,7 @@ class MaximumSplitsDue(generics.ListAPIView):
         ).distinct().order_by('creator__username')
 
         payable_splits = [{'split': split,
-                           'payable_amount': SplitTransactionSerializer().get_payable_amount(
+                           'payable_amount': SplitTransactionUtils().get_user_payable_amount(
                                user_id=self.request.user.id,
                                split=split)[0]}
                           for split in splits]

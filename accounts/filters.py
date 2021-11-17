@@ -1,3 +1,6 @@
+"""Filters Module for Queryset related to User Accounts"""
+
+
 from rest_framework import filters
 
 

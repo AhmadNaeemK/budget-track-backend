@@ -39,9 +39,14 @@ class SplitTransaction (models.Model):
     title = models.CharField(max_length=120)
     category = models.IntegerField(choices=TransactionCategories.choices)
     total_amount = models.IntegerField(default=0)
-    creator = models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='creator')
-    paying_friend = models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='paying_user')
-    all_friends_involved = models.ManyToManyField(to=settings.AUTH_USER_MODEL, related_name='involved_friends')
+    creator = models.ForeignKey(to=settings.AUTH_USER_MODEL,
+                                on_delete=models.CASCADE,
+                                related_name='creator')
+    paying_friend = models.ForeignKey(to=settings.AUTH_USER_MODEL,
+                                      on_delete=models.CASCADE,
+                                      related_name='paying_user')
+    all_friends_involved = models.ManyToManyField(to=settings.AUTH_USER_MODEL,
+                                                  related_name='involved_friends')
 
     @admin.display(description="Friends Involved")
     def get_all_friends_involved(self):
@@ -62,4 +67,6 @@ class Transaction(models.Model):
     category = models.IntegerField(choices=TransactionCategories.choices)
     amount = models.IntegerField(default=0)
 
-    split_expense = models.ForeignKey(to=SplitTransaction, on_delete=models.CASCADE, blank=True, null=True)
+    split_expense = models.ForeignKey(to=SplitTransaction,
+                                      on_delete=models.CASCADE,
+                                      blank=True, null=True)

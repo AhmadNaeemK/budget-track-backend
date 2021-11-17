@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Transaction, CashAccount, SplitTransaction
+from wallet.models import Transaction, CashAccount, SplitTransaction
 
 
 class TransactionAdminInline(admin.TabularInline):
@@ -19,8 +19,8 @@ class CashAccountsAdmin(admin.ModelAdmin):
 
 
 class TransactionAdmin(admin.ModelAdmin):
-    list_display = ('title', 'user', 'cash_account', 'category', 'transaction_time', 'amount', 'scheduled',
-                    'split_expense')
+    list_display = ('title', 'user', 'cash_account', 'category', 'transaction_time', 'amount',
+                    'scheduled', 'split_expense')
 
 
 class SplitTransactionAdmin(admin.ModelAdmin):

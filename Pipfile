@@ -18,6 +18,7 @@ pillow = "*"
 pytest = "*"
 django = "*"
 pytest-django = "*"
+pylint = "*"
 
 [dev-packages]
 

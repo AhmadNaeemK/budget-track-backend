@@ -1,0 +1,16 @@
+[MASTER]
+    ignore=migrations
+
+[MESSAGES CONTROL]
+    disable=
+        missing-docstring,
+        too-few-public-methods,
+        no-else-return,
+        no-self-use,
+        inconsistent-return-statements,
+        no-member,
+        abstract-method,
+        unused-variable,
+        invalid-name,
+        duplicate-code,
+        import-outside-toplevel

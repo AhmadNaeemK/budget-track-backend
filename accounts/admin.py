@@ -1,6 +1,7 @@
 from django.contrib import admin
-from .models import EmailAuthenticatedUser, FriendRequest
 from django.contrib.auth.admin import UserAdmin
+
+from accounts.models import EmailAuthenticatedUser, FriendRequest
 
 
 class FriendRequestAdmin(admin.ModelAdmin):

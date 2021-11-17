@@ -1,20 +1,17 @@
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from django.conf import settings
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
-
-from channels.layers import get_channel_layer
-from asgiref.sync import async_to_sync
-
 from twilio.base.exceptions import TwilioRestException
 
 
 class EmailNotification:
-
     budget_tracker_link = settings.FRONTEND_URL
 
     def notify(self, data, notification_type):
         notification = self._select_notification(notification_type)
-        self._send_email_notification(**notification(data))
+        self._send_email_notification(notification(data))
 
     def _select_notification(self, notification_type):
         if notification_type == Notification.SPLIT_INCLUDE_NOTIFICATION:
@@ -26,14 +23,14 @@ class EmailNotification:
         elif notification_type == Notification.DAILY_SCHEDULED_REPORT:
             return self._for_daily_scheduled_report
 
-    def _send_email_notification(self, template, context, subject, message, recipient_list):
-        html_message = render_to_string(template_name=template,
-                                        context=context
+    def _send_email_notification(self, email_data):
+        html_message = render_to_string(template_name=email_data["template"],
+                                        context=email_data["context"]
                                         )
-        send_mail(subject=subject,
-                  message=message,
+        send_mail(subject=email_data["subject"],
+                  message=email_data["message"],
                   html_message=html_message,
-                  recipient_list=recipient_list,
+                  recipient_list=email_data["recipient_list"],
                   from_email=settings.SENDER_EMAIL
                   )
 
@@ -51,7 +48,8 @@ class EmailNotification:
                 'context': context,
                 'subject': title,
                 'message': title,
-                'recipient_list': [friend["email"] for friend in data["split"]["all_friends_involved"]]
+                'recipient_list': [friend["email"] for friend in
+                                   data["split"]["all_friends_involved"]]
                 }
 
     def _for_split_payment_notification(self, data):
@@ -124,13 +122,14 @@ class SMSNotification:
                 from_=settings.PHN_NUM,
                 to=recipient_phone
             )
-        except TwilioRestException as e:
-            print(e)
+        except TwilioRestException:
+            print(TwilioRestException)
 
     def _for_split_include_notification(self, data):
         message = f'You have been added to a split expense ' \
                   f'for {data["split"]["title"]} by {data["split"]["creator"]["username"]}.' \
-                  f'\nAmount Paid by {data["split"]["paying_friend"]["username"]}: {data["split"]["total_amount"]}'
+                  f'\nAmount Paid by {data["split"]["paying_friend"]["username"]}: ' \
+                  f'{data["split"]["total_amount"]}'
         for friend in data["split"]["all_friends_involved"]:
             self._send_sms_notification(
                 message=message,
@@ -139,8 +138,8 @@ class SMSNotification:
 
     def _for_split_payment_notification(self, data):
 
-        message = f'Payment amount {data["payment"]} for {data["split"]["title"]} made by {data["user"]["username"]}' \
-                  f', added to your cash account'
+        message = f'Payment amount {data["payment"]} for {data["split"]["title"]} made by ' \
+                  f'{data["user"]["username"]}, added to your cash account'
         self._send_sms_notification(
             message=message,
             recipient_phone=data["split"]["paying_friend"]["phone_number"]
@@ -170,16 +169,13 @@ class PushNotification:
 
     def _send_push_notification(self, message, group_name):
         channel_layer = get_channel_layer()
-        try:
-            async_to_sync(channel_layer.group_send)(
-                group_name,
-                {
-                    "type": "send_notification",
-                    "notification": message,
-                },
-            )
-        except Exception as e:
-            print(e)
+        async_to_sync(channel_layer.group_send)(
+            group_name,
+            {
+                "type": "send_notification",
+                "notification": message,
+            },
+        )
 
     def _for_split_include_notification(self, data):
         message = f'You have been added to a split expense for {data["split"]["title"]} by ' \
@@ -192,7 +188,7 @@ class PushNotification:
 
     def _for_split_payment_notification(self, data):
 
-        message = f'Payment amount {data["payment"]} for split "{data["split"]["title"]}" made ' \
+        message = f'Payment amount {data["payment"]} for split "{data["split"]["title"]}" made '\
                   f'by {data["user"]["username"]}, added to your cash account'
         self._send_push_notification(
             message=message,
@@ -200,8 +196,8 @@ class PushNotification:
         )
 
     def _for_scheduled_transaction_report(self, data):
-        message = f'Scheduled Transaction for {data["transaction"]["title"]} has {data["status"]}.' \
-                  f'\nTransaction Amount: {data["transaction"]["amount"]}'
+        message = f'Scheduled Transaction for {data["transaction"]["title"]} has {data["status"]}' \
+                  f' \nTransaction Amount: {data["transaction"]["amount"]}'
         self._send_push_notification(
             message=message,
             group_name=f'notification_{data["transaction"]["user"]["id"]}'

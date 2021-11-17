@@ -1,13 +1,15 @@
 import datetime
 from rest_framework import filters
-from .models import Transaction, TransactionCategories
+from wallet.models import TransactionCategories
 
 
 class TransactionFilterBackend(filters.BaseFilterBackend):
 
     def filter_queryset(self, request, queryset, view):
         month = request.GET.get('month') or datetime.date.today().month
-        transactions = queryset.filter(user=request.user.id, transaction_time__month=month, scheduled=False)
+        transactions = queryset.filter(user=request.user.id,
+                                       transaction_time__month=month,
+                                       scheduled=False)
         return transactions
 
 
