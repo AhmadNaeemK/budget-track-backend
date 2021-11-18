@@ -1,6 +1,6 @@
 from django.db.models import Sum
 
-from wallet.models import Transaction, TransactionCategories
+from .models import Transaction, TransactionCategories
 
 
 class SplitTransactionUtils:

@@ -19,6 +19,7 @@ pytest = "*"
 django = "*"
 pytest-django = "*"
 pylint = "*"
+django-debug-toolbar = "*"
 
 [dev-packages]
 

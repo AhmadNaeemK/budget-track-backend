@@ -1,7 +1,7 @@
 import pytest
 
-from wallet.utils import TransactionUtils
-from wallet.models import TransactionCategories
+from .utils import TransactionUtils
+from .models import TransactionCategories
 
 test_data = [
     (0, 20, TransactionCategories.Income.value, 20),

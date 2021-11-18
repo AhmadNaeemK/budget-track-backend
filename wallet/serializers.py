@@ -6,8 +6,8 @@ from rest_framework import serializers
 
 from accounts.models import EmailAuthenticatedUser
 from accounts.serializers import UserSerializer
-from wallet.models import Transaction, CashAccount, SplitTransaction, TransactionCategories
-from wallet.utils import SplitTransactionUtils
+from .models import Transaction, CashAccount, SplitTransaction, TransactionCategories
+from .utils import SplitTransactionUtils
 
 
 class CashAccountSerializer(serializers.ModelSerializer):

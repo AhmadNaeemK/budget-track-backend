@@ -7,10 +7,10 @@ from celery import shared_task
 from django.conf import settings
 
 from accounts.models import EmailAuthenticatedUser as User
-from wallet.models import Transaction, TransactionCategories
-from wallet.serializers import TransactionSerializer
-from wallet.services import Notification
-from wallet.exceptions import AccountBalanceLimitException
+from .models import Transaction, TransactionCategories
+from .serializers import TransactionSerializer
+from .services import Notification
+from .exceptions import AccountBalanceLimitException
 
 
 def get_tz_aware_current_time():

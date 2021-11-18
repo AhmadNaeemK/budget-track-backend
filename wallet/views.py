@@ -9,17 +9,17 @@ from rest_framework.views import APIView
 
 from accounts.models import EmailAuthenticatedUser as User
 from accounts.serializers import UserSerializer
-from wallet.filters import IncomeFilterBackend
-from wallet.filters import TransactionFilterBackend, ScheduledTransactionFilterBackend, \
+from .filters import IncomeFilterBackend
+from .filters import TransactionFilterBackend, ScheduledTransactionFilterBackend, \
     ExpenseFilterBackend
-from wallet.models import Transaction, CashAccount, SplitTransaction, TransactionCategories
-from wallet.report_maker import ReportMaker
-from wallet.serializers import SplitTransactionSerializer, MaxSplitsDueSerializer
-from wallet.serializers import TransactionSerializer, CashAccountSerializer, \
+from .models import Transaction, CashAccount, SplitTransaction, TransactionCategories
+from .report_maker import ReportMaker
+from .serializers import SplitTransactionSerializer, MaxSplitsDueSerializer
+from .serializers import TransactionSerializer, CashAccountSerializer, \
     ScheduledTransactionSerializer
-from wallet.services import Notification
-from wallet.tasks import send_all_notification
-from wallet.utils import SplitTransactionUtils, TransactionUtils
+from .services import Notification
+from .tasks import send_all_notification
+from .utils import SplitTransactionUtils, TransactionUtils
 
 
 class ExpenseListView(generics.ListCreateAPIView):
@@ -132,9 +132,8 @@ class CashAccountView(generics.RetrieveUpdateDestroyAPIView):
 
 class TransactionCategoryChoicesList(APIView):
 
-    def get(self):
+    def get(self, request):
         choices = TransactionCategories.choices
-
         return Response(choices)
 
 
@@ -172,10 +171,9 @@ class MonthlyTransactionDataView(APIView):
                                                   )
         total_expenses = transactions.exclude(category=TransactionCategories.Income.value
                                               ).aggregate(Sum('amount'))['amount__sum']
-        total_income = \
-            transactions.filter(category=TransactionCategories.Income.value).aggregate(
-                Sum('amount'))[
-                'amount__sum']
+        total_income = transactions.filter(category=TransactionCategories.Income.value).aggregate(
+            Sum('amount'))[
+            'amount__sum']
         return total_income, total_expenses
 
     def get(self, request):

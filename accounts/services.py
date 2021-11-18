@@ -7,7 +7,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from twilio.base.exceptions import TwilioRestException
 
-from accounts.models import EmailAuthenticatedUser
+from .models import EmailAuthenticatedUser
 
 
 class EmailNotification:

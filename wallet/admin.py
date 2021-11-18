@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from wallet.models import Transaction, CashAccount, SplitTransaction
+from .models import Transaction, CashAccount, SplitTransaction
 
 
 class TransactionAdminInline(admin.TabularInline):
