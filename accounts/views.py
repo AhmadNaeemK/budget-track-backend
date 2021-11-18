@@ -21,8 +21,6 @@ from accounts.tasks import send_friend_request_notifications, \
     send_user_verification_email_notification, send_password_recovery_email_notification
 
 
-
-
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = ValidateTokenPairSerializer
 
@@ -33,15 +31,15 @@ class UserList(generics.ListAPIView):
     search_fields = ['username']
 
     def get_queryset(self):
-        users = User.objects.exclude(id=self.request.user.id)
         sent_friend_request_list = [req.receiver.id for req in
                                     FriendRequest.objects.filter(user=self.request.user.id)]
         received_friend_request_list = [req.user.id for req in
                                         FriendRequest.objects.filter(receiver=self.request.user.id)]
         friends_list = [friend.id for friend in
                         User.objects.get(pk=self.request.user.id).friends.all()]
-        unsent_request_users = users.exclude(
-            Q(id__in=sent_friend_request_list + received_friend_request_list + friends_list))
+        unsent_request_users = User.objects.exclude(
+            Q(id__in=sent_friend_request_list + received_friend_request_list + friends_list + [
+                self.request.user.id]))
         return unsent_request_users.order_by('username')
 
 

@@ -132,9 +132,8 @@ class CashAccountView(generics.RetrieveUpdateDestroyAPIView):
 
 class TransactionCategoryChoicesList(APIView):
 
-    def get(self):
+    def get(self, request):
         choices = TransactionCategories.choices
-
         return Response(choices)
 
 
@@ -172,10 +171,9 @@ class MonthlyTransactionDataView(APIView):
                                                   )
         total_expenses = transactions.exclude(category=TransactionCategories.Income.value
                                               ).aggregate(Sum('amount'))['amount__sum']
-        total_income = \
-            transactions.filter(category=TransactionCategories.Income.value).aggregate(
-                Sum('amount'))[
-                'amount__sum']
+        total_income = transactions.filter(category=TransactionCategories.Income.value).aggregate(
+            Sum('amount'))[
+            'amount__sum']
         return total_income, total_expenses
 
     def get(self, request):
