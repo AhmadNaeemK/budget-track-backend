@@ -14,3 +14,4 @@
         invalid-name,
         duplicate-code,
         import-outside-toplevel
+        unused-argument
