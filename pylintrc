@@ -13,5 +13,5 @@
         unused-variable,
         invalid-name,
         duplicate-code,
-        import-outside-toplevel
-        unused-argument
+        import-outside-toplevel,
+        unused-argument,
