@@ -2,7 +2,7 @@ from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from wallet.models import CashAccount
-from accounts.models import EmailAuthenticatedUser as User, FriendRequest
+from .models import EmailAuthenticatedUser as User, FriendRequest
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -10,7 +10,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'phone_number', 'display_picture', 'first_name',
-                  'last_name']
+                  'last_name', 'fullname']
 
 
 class RegistrationSerializer(serializers.ModelSerializer):

@@ -3,7 +3,7 @@
 *.pot
 *.pyc
 __pycache__
-db.sqlite3
+db.sqlite3*
 
 
 .DS_Store
@@ -73,13 +73,13 @@ coverage.xml
 .python-version
 
 # celery
-celerybeat-schedule.*
+/celerybeat-schedule*
 
 # SageMath parsed files
 *.sage.py
 
 # Environments
-.env
+*.env
 .venv
 .env/
 venv/
@@ -113,4 +113,9 @@ GitHub.sublime-settings
 #Media Folder
 /budget_tracker/media/
 
-budget_tracker/celerybeat-schedule
+
+database_dumper_csv/
+
+database_dumper.py
+
+*.sql

@@ -6,8 +6,8 @@ from rest_framework import serializers
 
 from accounts.models import EmailAuthenticatedUser
 from accounts.serializers import UserSerializer
-from wallet.models import Transaction, CashAccount, SplitTransaction, TransactionCategories
-from wallet.utils import SplitTransactionUtils
+from .models import Transaction, CashAccount, SplitTransaction, TransactionCategories
+from .utils import SplitTransactionUtils
 
 
 class CashAccountSerializer(serializers.ModelSerializer):
@@ -59,6 +59,8 @@ class SplitTransactionSerializer(serializers.ModelSerializer):
 
 
 class TransactionSerializer(serializers.ModelSerializer):
+    cash_account = serializers.SerializerMethodField()
+
     class Meta:
         model = Transaction
         fields = ['id', 'user', 'amount', 'category', 'transaction_time', 'cash_account',
@@ -67,7 +69,11 @@ class TransactionSerializer(serializers.ModelSerializer):
 
     user = UserSerializer(read_only=True)
     split_expense = SplitTransactionSerializer(read_only=True)
-    cash_account = CashAccountSerializer(read_only=True)
+
+    def get_cash_account(self, obj):
+        return {'id': obj.cash_account.id,
+                'title': obj.cash_account.title,
+                'balance': obj.cash_account.balance}
 
     def create(self, validated_data):
         validated_data['cash_account'] = CashAccount.objects.get(
@@ -105,7 +111,7 @@ class TransactionSerializer(serializers.ModelSerializer):
             checks if account balance after income transaction update < total account expenses
         """
         if (self.partial and (self.instance.cash_account.balance - self.instance.amount + amount <
-                        self.instance.cash_account.get_expenses())):
+                              self.instance.cash_account.get_expenses())):
             raise serializers.ValidationError("Expenses are more than new balance")
 
     def validate(self, attrs):

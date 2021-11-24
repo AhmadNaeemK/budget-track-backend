@@ -3,8 +3,8 @@ from datetime import datetime
 from django.db.models import Sum
 from django.template.loader import get_template
 
-from wallet.models import Transaction, TransactionCategories
-from wallet.serializers import TransactionSerializer
+from .models import Transaction, TransactionCategories
+from .serializers import TransactionSerializer
 
 
 class ReportMaker:

@@ -1,5 +1,5 @@
 from celery import shared_task
-from accounts.services import Notification
+from .services import Notification
 
 
 @shared_task

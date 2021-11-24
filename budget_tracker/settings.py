@@ -45,12 +45,14 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'channels',
     'django_celery_results',
+    'debug_toolbar',
     # my apps
     'wallet.apps.WalletConfig',
     'accounts.apps.AccountsConfig',
 ]
 
 MIDDLEWARE = [
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     "corsheaders.middleware.CorsMiddleware",
@@ -60,6 +62,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+
 ]
 
 ROOT_URLCONF = 'budget_tracker.urls'
@@ -123,6 +126,7 @@ AUTH_PASSWORD_VALIDATORS = [
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication'
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
@@ -169,6 +173,13 @@ CORS_ALLOWED_ORIGINS = [
 # Authentication User
 
 AUTH_USER_MODEL = 'accounts.EmailAuthenticatedUser'
+
+DEBUG_TOOLBAR_CONFIG = {
+    "SHOW_TOOLBAR_CALLBACK": lambda request: True,
+}
+INTERNAL_IPS = [
+    '127.0.0.1',
+]
 
 # SimpleJWT settings
 SIMPLE_JWT = {

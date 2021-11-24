@@ -1,26 +1,22 @@
 import os
+
 import jwt
 import rest_framework_simplejwt.exceptions
+from django.conf import settings
+from django.db.models import Q
+from rest_framework import permissions, generics, status, filters
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.parsers import MultiPartParser, FormParser
-from rest_framework import permissions, generics, status, filters
-from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.authentication import JWTTokenUserAuthentication
+from rest_framework_simplejwt.views import TokenObtainPairView
 
-from django.db.models import Q
-from django.conf import settings
-
-from accounts.models import EmailAuthenticatedUser as User, FriendRequest
-
-from accounts.filters import UserFilterBackend, ReceiverFilterBackend
-from accounts.serializers import UserSerializer, RegistrationSerializer, \
-    ValidateTokenPairSerializer, FriendRequestSerializer
-
-from accounts.tasks import send_friend_request_notifications, \
-    send_user_verification_email_notification, send_password_recovery_email_notification
-
-
+from .filters import UserFilterBackend, ReceiverFilterBackend
+from .models import EmailAuthenticatedUser as User, FriendRequest
+from .serializers import UserSerializer, RegistrationSerializer, ValidateTokenPairSerializer,\
+    FriendRequestSerializer
+from .tasks import send_friend_request_notifications, send_user_verification_email_notification, \
+    send_password_recovery_email_notification
 
 
 class MyTokenObtainPairView(TokenObtainPairView):
@@ -33,15 +29,13 @@ class UserList(generics.ListAPIView):
     search_fields = ['username']
 
     def get_queryset(self):
-        users = User.objects.exclude(id=self.request.user.id)
-        sent_friend_request_list = [req.receiver.id for req in
-                                    FriendRequest.objects.filter(user=self.request.user.id)]
-        received_friend_request_list = [req.user.id for req in
-                                        FriendRequest.objects.filter(receiver=self.request.user.id)]
-        friends_list = [friend.id for friend in
-                        User.objects.get(pk=self.request.user.id).friends.all()]
-        unsent_request_users = users.exclude(
-            Q(id__in=sent_friend_request_list + received_friend_request_list + friends_list))
+        user = User.objects.prefetch_related("sender", "receiver").get(pk=self.request.user.id)
+        sent_friend_request_list = [req.receiver.id for req in user.sender.all()]
+        received_friend_request_list = [req.user.id for req in user.receiver.all()]
+        friends_list = [friend.id for friend in user.friends.all()]
+        unsent_request_users = User.objects.exclude(
+            Q(id__in=sent_friend_request_list + received_friend_request_list + friends_list + [
+                self.request.user.id]))
         return unsent_request_users.order_by('username')
 
 
