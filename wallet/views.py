@@ -140,27 +140,22 @@ class TransactionCategoryChoicesList(APIView):
 class ExpenseCategoryDataView(APIView):
 
     def get(self, request):
-        def get_total_expenses(account_transactions):
+        def get_total_expenses(account_expenses):
             category_data = []
             for category in TransactionCategories.choices:
-                category_transactions = filter(
-                    lambda transaction: transaction.category == category[0],
-                    account_transactions)
-                total_category_expense = sum(
-                    [transaction.amount for transaction in category_transactions])
+                total_category_expense = account_expenses.filter(category=category[0])
                 category_data.append([category[1], total_category_expense])
             return category_data
-        
+
         accounts = CashAccount.objects.prefetch_related('transaction_set').filter(
             user=request.user.id)
         data = {}
         for account in accounts:
-            account_transactions = list(account.transaction_set.all())
-            data[account.title] = get_total_expenses(account_transactions)
-            data[account.title] = filter(lambda category_data: (
-                    category_data[1] > 0
-                    and category_data[0] != TransactionCategories.Income.name),
-                    data[account.title])
+            account_expenses = account.transaction_set.exclude(
+                category=TransactionCategories.Income.value)
+            data[account.title] = get_total_expenses(account_expenses)
+            data[account.title] = filter(lambda category_data: (category_data[1] > 0),
+                                         data[account.title])
         return Response(data)
 
 
