@@ -1,0 +1,43 @@
+services:
+  web:
+    build: .
+    env_file:
+      - .env
+    command: python manage.py runserver 0.0.0.0:8000
+    ports:
+      - "8000:8000"
+    networks:
+      - default
+
+  redis:
+    container_name: redis
+    image: redis:5
+    networks:
+      - default
+    ports:
+      - "6379:6379"
+
+  daphne:
+    build: .
+    command: bash -c "./migrate.sh; daphne -b 0.0.0.0 -p 9542 budget_tracker.asgi:application"
+    ports:
+      - "9542:9542"
+    env_file:
+      - .env
+    networks:
+      - default
+    depends_on:
+      - redis
+    links:
+      - redis
+
+  celery:
+    build: .
+    networks:
+      - default
+    depends_on:
+      redis:
+        condition: service_started
+    env_file:
+      - .env
+    command: celery -A budget_tracker worker -B -l info
