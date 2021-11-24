@@ -140,24 +140,27 @@ class TransactionCategoryChoicesList(APIView):
 class ExpenseCategoryDataView(APIView):
 
     def get(self, request):
-        def get_total_expenses(category, account):
-            total_category_expenses = Transaction.objects.filter(user=request.user.id,
-                                                                 category=category,
-                                                                 cash_account=account,
-                                                                 transaction_time__month=
-                                                                 request.GET.get('month'),
-                                                                 scheduled=False
-                                                                 ).aggregate(Sum('amount')
-                                                                             )['amount__sum']
-            return total_category_expenses or 0
-
-        accounts = CashAccount.objects.filter(user=request.user.id)
+        def get_total_expenses(account_transactions):
+            category_data = []
+            for category in TransactionCategories.choices:
+                category_transactions = filter(
+                    lambda transaction: transaction.category == category[0],
+                    account_transactions)
+                total_category_expense = sum(
+                    [transaction.amount for transaction in category_transactions])
+                category_data.append([category[1], total_category_expense])
+            return category_data
+        
+        accounts = CashAccount.objects.prefetch_related('transaction_set').filter(
+            user=request.user.id)
         data = {}
         for account in accounts:
-            data[account.title] = [(category[1], get_total_expenses(category[0], account))
-                                   for category in TransactionCategories.choices if
-                                   get_total_expenses(category[0], account) > 0
-                                   and category[1] != 'Income']
+            account_transactions = list(account.transaction_set.all())
+            data[account.title] = get_total_expenses(account_transactions)
+            data[account.title] = filter(lambda category_data: (
+                    category_data[1] > 0
+                    and category_data[0] != TransactionCategories.Income.name),
+                    data[account.title])
         return Response(data)
 
 

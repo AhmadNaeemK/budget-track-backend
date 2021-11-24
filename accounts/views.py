@@ -8,7 +8,7 @@ from rest_framework import permissions, generics, status, filters
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.authentication import JWTTokenUserAuthentication
 
-from django.db.models import Q
+from django.db.models import Q, Prefetch
 from django.conf import settings
 
 from .models import EmailAuthenticatedUser as User, FriendRequest
@@ -31,12 +31,10 @@ class UserList(generics.ListAPIView):
     search_fields = ['username']
 
     def get_queryset(self):
-        sent_friend_request_list = [req.receiver.id for req in
-                                    FriendRequest.objects.filter(user=self.request.user.id)]
-        received_friend_request_list = [req.user.id for req in
-                                        FriendRequest.objects.filter(receiver=self.request.user.id)]
-        friends_list = [friend.id for friend in
-                        User.objects.get(pk=self.request.user.id).friends.all()]
+        user = User.objects.prefetch_related("sender", "receiver").get(pk=self.request.user.id)
+        sent_friend_request_list = [req.receiver.id for req in user.sender.all()]
+        received_friend_request_list = [req.user.id for req in user.receiver.all()]
+        friends_list = [friend.id for friend in user.friends.all()]
         unsent_request_users = User.objects.exclude(
             Q(id__in=sent_friend_request_list + received_friend_request_list + friends_list + [
                 self.request.user.id]))

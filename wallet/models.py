@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Sum
 from django.contrib import admin
 from django.conf import settings
 
@@ -17,13 +18,13 @@ class CashAccount(models.Model):
 
     @admin.display(description='Total Expenses')
     def get_expenses(self):
-        transactions = Transaction.objects.filter(cash_account=self, scheduled=False)
-        transaction_expenses = transactions.exclude(category=TransactionCategories.Income)
-        expenses = [transaction.amount for transaction in transaction_expenses]
-        return sum(expenses)
+        transactions = self.transaction_set.filter(scheduled=False)
+        expenses = transactions.exclude(category=TransactionCategories.Income.value)
+        total_expenses = expenses.aggregate(Sum('amount'))['amount__sum']
+        return total_expenses
 
 
-class TransactionCategories (models.IntegerChoices):
+class TransactionCategories(models.IntegerChoices):
     Income = 0
     Drink = 1
     Fuel = 2
@@ -34,8 +35,7 @@ class TransactionCategories (models.IntegerChoices):
     Other = 7
 
 
-class SplitTransaction (models.Model):
-
+class SplitTransaction(models.Model):
     title = models.CharField(max_length=120)
     category = models.IntegerField(choices=TransactionCategories.choices)
     total_amount = models.IntegerField(default=0)
