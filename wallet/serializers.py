@@ -68,7 +68,7 @@ class TransactionSerializer(serializers.ModelSerializer):
 
     user = UserSerializer(read_only=True)
     split_expense = SplitTransactionSerializer(read_only=True)
-    
+
     def get_cash_account (self, obj):
         return {'id': obj.cash_account.id,
                 'title': obj.cash_account.title,

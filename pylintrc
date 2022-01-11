@@ -15,3 +15,5 @@
         duplicate-code,
         import-outside-toplevel,
         unused-argument,
+        unused-import,
+        cell-var-from-loop

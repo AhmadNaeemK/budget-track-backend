@@ -150,7 +150,7 @@ class ExpenseCategoryDataView(APIView):
                     [transaction.amount for transaction in category_transactions])
                 category_data.append([category[1], total_category_expense])
             return category_data
-        
+
         accounts = CashAccount.objects.prefetch_related('transaction_set').filter(
             user=request.user.id)
         data = {}
