@@ -1,7 +1,6 @@
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from wallet.models import CashAccount
 from .models import EmailAuthenticatedUser as User, FriendRequest
 
 
@@ -29,7 +28,6 @@ class RegistrationSerializer(serializers.ModelSerializer):
         user.is_active = False
         user.set_password(validated_data['password'])
         user.save()
-        CashAccount.objects.create(title='Cash', user=user)
         return user
 
 

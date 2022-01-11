@@ -1,22 +1,20 @@
 import os
+
 import jwt
 import rest_framework_simplejwt.exceptions
+from django.conf import settings
+from django.db.models import Q
+from rest_framework import permissions, generics, status, filters
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.parsers import MultiPartParser, FormParser
-from rest_framework import permissions, generics, status, filters
-from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.authentication import JWTTokenUserAuthentication
-
-from django.db.models import Q, Prefetch
-from django.conf import settings
-
-from .models import EmailAuthenticatedUser as User, FriendRequest
+from rest_framework_simplejwt.views import TokenObtainPairView
 
 from .filters import UserFilterBackend, ReceiverFilterBackend
+from .models import EmailAuthenticatedUser as User, FriendRequest
 from .serializers import UserSerializer, RegistrationSerializer, \
     ValidateTokenPairSerializer, FriendRequestSerializer
-
 from .tasks import send_friend_request_notifications, \
     send_user_verification_email_notification, send_password_recovery_email_notification
 
