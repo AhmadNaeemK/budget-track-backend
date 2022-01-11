@@ -29,7 +29,6 @@ class RegistrationSerializer(serializers.ModelSerializer):
         user.is_active = False
         user.set_password(validated_data['password'])
         user.save()
-        CashAccount.objects.create(title='Cash', user=user)
         return user
 
 
